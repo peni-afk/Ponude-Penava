@@ -26,7 +26,10 @@
         .print-text { display: none; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; padding: 0; }
 
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; text-align: left; }
+        
+        /* NOVO: Svijetlo plava boja zaglavlja */
+        th { background: #e3f2fd; border: 1px solid #ddd; padding: 12px; text-align: left; color: #1565c0; }
+        
         td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
         
         .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; }
@@ -44,24 +47,23 @@
 
         /* --- STIL ZA MODAL (POP-UP) --- */
         #mobile-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
-        .modal-content { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; }
-        .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-content { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
+        /* MODIFIKACIJA: Maknut min-height i širina na mobitelu da ostane sitnije */
         @media screen and (max-width: 600px) {
-            body { padding: 5px; }
-            .container { padding: 15px; min-height: auto; }
-            .header-info, .client-box, .totals { width: 100%; float: none; }
-            .logo-container { position: static; text-align: center; margin-bottom: 10px; }
-            /* Na mobitelu onemogućujemo direktan unos da bi klik otvorio modal */
+            .container { padding: 20px; min-height: auto; width: 850px; transform: scale(0.45); transform-origin: top left; margin-bottom: -500px; }
+            body { overflow-x: auto; width: 100%; }
             .desc, .qty, .price { cursor: pointer; }
         }
 
         @media print {
-            body { padding: 0; background: white; margin: 0; }
-            .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; display: block; }
+            body { padding: 0; background: white; margin: 0; overflow: visible; }
+            .container { box-shadow: none; padding: 1.5cm; width: 100% !important; min-height: 100vh; border-radius: 0; display: block; transform: none !important; margin: 0 !important; }
             .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal { display: none !important; }
             .print-text { display: block !important; }
+            th { background: #e3f2fd !important; -webkit-print-color-adjust: exact; }
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
             tr { page-break-inside: avoid !important; }
@@ -88,13 +90,13 @@
 
 <div id="mobile-modal" class="no-print">
     <div class="modal-content">
-        <h3>Uredi stavku</h3>
+        <h3 style="margin-top:0; color:#1565c0;">Uredi stavku</h3>
         <label>Opis radova:</label>
-        <textarea id="modal-desc" rows="5"></textarea>
+        <textarea id="modal-desc" rows="5" style="font-size:16px;"></textarea>
         <label>Površina (m2):</label>
-        <input type="number" id="modal-qty">
+        <input type="number" id="modal-qty" style="font-size:16px;">
         <label>Cijena (KM/m2):</label>
-        <input type="number" id="modal-price">
+        <input type="number" id="modal-price" style="font-size:16px;">
         <div class="modal-actions">
             <button class="btn btn-add" style="flex:1;" onclick="saveModalChanges()">POTVRDI</button>
             <button class="btn" style="flex:1; background:#666;" onclick="document.getElementById('mobile-modal').style.display='none'">ODUSTANI</button>
@@ -133,7 +135,7 @@
         <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
-    <table id="main-table">
+    <table>
         <thead>
             <tr>
                 <th style="width:30px">Rb</th>
@@ -178,7 +180,7 @@
 </div>
 
 <script>
-// --- KONFIGURACIJA (SVOJE PODATKE ZALIJEPI OVDJE) ---
+// --- KONFIGURACIJA ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -221,10 +223,10 @@ function addRow(d='', q=0, p=0) {
         <td style="text-align:center"></td>
         <td>
             <div class="print-text"></div>
-            <textarea class="desc" onclick="handleMobileClick(this)" oninput="updateText(this)">${d}</textarea>
+            <textarea class="desc" onclick="handleInputClick(this)" oninput="updateText(this)">${d}</textarea>
         </td>
-        <td><input type="number" class="qty" value="${q}" onclick="handleMobileClick(this)" oninput="calculate()"></td>
-        <td><input type="number" class="price" value="${p}" onclick="handleMobileClick(this)" oninput="calculate()"></td>
+        <td><input type="number" class="qty" value="${q}" onclick="handleInputClick(this)" oninput="calculate()"></td>
+        <td><input type="number" class="price" value="${p}" onclick="handleInputClick(this)" oninput="calculate()"></td>
         <td class="row-t" style="text-align:right">0,00</td>
         <td class="action-col no-print" style="text-align:center;"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer;">X</button></td>
     `;
@@ -239,16 +241,15 @@ function updateText(el) {
     el.style.height = el.scrollHeight + 'px';
 }
 
-// Funkcija koja odlučuje hoće li otvoriti pop-up (ako je mobitel)
-function handleMobileClick(el) {
-    if (window.innerWidth <= 600) {
-        currentRowRef = el.closest('tr');
-        document.getElementById('modal-desc').value = currentRowRef.querySelector('.desc').value;
-        document.getElementById('modal-qty').value = currentRowRef.querySelector('.qty').value;
-        document.getElementById('modal-price').value = currentRowRef.querySelector('.price').value;
-        document.getElementById('mobile-modal').style.display = 'flex';
-        el.blur(); // Makni fokus s polja da se ne digne sistemska tipkovnica odmah
-    }
+function handleInputClick(el) {
+    // Modal se otvara na svim uređajima (i mobitel i desktop) za konzistenciju, 
+    // ali fokus na desktopu ostaje u polju ako želiš.
+    currentRowRef = el.closest('tr');
+    document.getElementById('modal-desc').value = currentRowRef.querySelector('.desc').value;
+    document.getElementById('modal-qty').value = currentRowRef.querySelector('.qty').value;
+    document.getElementById('modal-price').value = currentRowRef.querySelector('.price').value;
+    document.getElementById('mobile-modal').style.display = 'flex';
+    el.blur(); 
 }
 
 function saveModalChanges() {
@@ -270,27 +271,19 @@ async function saveData() {
         items.push({ d: r.querySelector('.desc').value, q: parseFloat(r.querySelector('.qty').value), p: parseFloat(r.querySelector('.price').value) });
     });
     const data = {
-        name: document.getElementById('cName').value,
-        addr: document.getElementById('cAddr').value,
-        city: document.getElementById('cCity').value,
-        num: document.getElementById('offerNum').value,
-        manualDate: document.getElementById('manualDate').value,
-        note: document.getElementById('notes').value,
-        items: items,
-        total: document.getElementById('total').innerText,
-        date: new Date().toLocaleDateString('hr-HR')
+        name: document.getElementById('cName').value, addr: document.getElementById('cAddr').value, city: document.getElementById('cCity').value,
+        num: document.getElementById('offerNum').value, manualDate: document.getElementById('manualDate').value, note: document.getElementById('notes').value,
+        items: items, total: document.getElementById('total').innerText, date: new Date().toLocaleDateString('hr-HR')
     };
-    try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška: " + e); }
+    try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška!"); }
 }
 
 function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
 
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
-    const list = document.getElementById('admin-list');
-    list.innerHTML = "Učitavam...";
-    const snap = await db.collection("ponude").get();
-    list.innerHTML = "";
+    const list = document.getElementById('admin-list'); list.innerHTML = "Učitavam...";
+    const snap = await db.collection("ponude").get(); list.innerHTML = "";
     snap.forEach(doc => {
         const d = doc.data();
         const tr = document.createElement('tr');
@@ -300,18 +293,11 @@ async function openAdmin() {
 }
 
 async function loadOffer(id) {
-    const doc = await db.collection("ponude").doc(id).get();
-    const d = doc.data();
-    document.getElementById('cName').value = d.name;
-    document.getElementById('cAddr').value = d.addr;
-    document.getElementById('cCity').value = d.city;
-    document.getElementById('offerNum').value = d.num;
-    document.getElementById('manualDate').value = d.manualDate || "";
-    document.getElementById('notes').value = d.note;
-    document.getElementById('items-body').innerHTML = "";
-    d.items.forEach(i => addRow(i.d, i.q, i.p));
-    syncPrintText();
-    closeAdmin();
+    const doc = await db.collection("ponude").doc(id).get(); const d = doc.data();
+    document.getElementById('cName').value = d.name; document.getElementById('cAddr').value = d.addr; document.getElementById('cCity').value = d.city;
+    document.getElementById('offerNum').value = d.num; document.getElementById('manualDate').value = d.manualDate || "";
+    document.getElementById('notes').value = d.note; document.getElementById('items-body').innerHTML = "";
+    d.items.forEach(i => addRow(i.d, i.q, i.p)); syncPrintText(); closeAdmin();
 }
 
 function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
