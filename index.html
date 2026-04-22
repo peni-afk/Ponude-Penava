@@ -23,7 +23,6 @@
         
         input, textarea { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
         
-        /* Pomoćni element za print */
         .print-text { display: none; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; padding: 0; }
 
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
@@ -43,17 +42,27 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
+        /* --- POSTAVKE ZA PRIJELOM STRANICE --- */
         @page { size: auto; margin: 0; }
         @media print {
             body { padding: 0; background: white; margin: 0; }
-            .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; }
+            .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; display: block; }
             .no-print, .btn, .action-col, #login-trigger, textarea, .desc { display: none !important; }
-            
-            /* Prikazujemo print-text umjesto textarea */
             .print-text { display: block !important; }
-            
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
-            .logo-container { right: 1.5cm; top: 1.5cm; }
+            .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
+            
+            /* Sprječava kidanje redova tablice na pola */
+            tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+            table { page-break-inside: auto; }
+            
+            /* Sprječava da naslovi ostanu sami na dnu stranice */
+            h2, h3, strong { page-break-after: avoid; }
+            
+            /* Drži napomenu i potpis zajedno ako je moguće */
+            .footer-content { page-break-inside: avoid; margin-top: 20px; }
+            
+            .totals-wrapper { page-break-inside: avoid; }
             input::placeholder { color: transparent; }
             .totals { float: right !important; }
             .contact-info-print { display: block !important; text-align: center; margin-top: 5px; font-size: 0.9em; }
@@ -175,7 +184,6 @@ const db = firebase.firestore();
 
 function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-// Sinkronizacija teksta za print
 function syncPrintText() {
     document.querySelectorAll('#items-body tr').forEach(r => {
         r.querySelector('.print-text').innerText = r.querySelector('.desc').value;
@@ -216,7 +224,7 @@ function addRow(d='', q=0, p=0) {
     document.getElementById('items-body').appendChild(tr);
     
     const ta = tr.querySelector('textarea');
-    tr.querySelector('.print-text').innerText = d; // Inicijalizacija teksta za print
+    tr.querySelector('.print-text').innerText = d;
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
     
@@ -271,7 +279,7 @@ async function loadOffer(id) {
     document.getElementById('notes').value = d.note;
     document.getElementById('items-body').innerHTML = "";
     d.items.forEach(i => addRow(i.d, i.q, i.p));
-    syncPrintText(); // Sinkronizacija nakon učitavanja
+    syncPrintText();
     closeAdmin();
 }
 
