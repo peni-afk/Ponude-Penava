@@ -42,22 +42,25 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        /* --- MOBILNA OPTIMIZACIJA (SAMO ZA EKRAN) --- */
+        /* --- STIL ZA MODAL (POP-UP) --- */
+        #mobile-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
+        .modal-content { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; }
+        .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+
         @media screen and (max-width: 600px) {
             body { padding: 5px; }
-            .container { padding: 20px; min-height: auto; }
+            .container { padding: 15px; min-height: auto; }
             .header-info, .client-box, .totals { width: 100%; float: none; }
-            .logo-container { position: static; text-align: center; margin-bottom: 20px; }
-            input, textarea, .btn { font-size: 16px !important; } /* Lakše za mobitel */
-            table { display: block; overflow-x: auto; } /* Omogućuje scroll ako je tablica preširoka */
+            .logo-container { position: static; text-align: center; margin-bottom: 10px; }
+            /* Na mobitelu onemogućujemo direktan unos da bi klik otvorio modal */
+            .desc, .qty, .price { cursor: pointer; }
         }
 
-        /* --- PRINT (NETAKNUTO, KAKO JE RADILO) --- */
-        @page { size: auto; margin: 0; }
         @media print {
             body { padding: 0; background: white; margin: 0; }
             .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; display: block; }
-            .no-print, .btn, .action-col, #login-trigger, textarea, .desc { display: none !important; }
+            .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal { display: none !important; }
             .print-text { display: block !important; }
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
@@ -78,9 +81,25 @@
         <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
     </div>
     <table style="width:100%;">
-        <thead><tr><th>Datum (Spremanja)</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
+        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
         <tbody id="admin-list"></tbody>
     </table>
+</div>
+
+<div id="mobile-modal" class="no-print">
+    <div class="modal-content">
+        <h3>Uredi stavku</h3>
+        <label>Opis radova:</label>
+        <textarea id="modal-desc" rows="5"></textarea>
+        <label>Površina (m2):</label>
+        <input type="number" id="modal-qty">
+        <label>Cijena (KM/m2):</label>
+        <input type="number" id="modal-price">
+        <div class="modal-actions">
+            <button class="btn btn-add" style="flex:1;" onclick="saveModalChanges()">POTVRDI</button>
+            <button class="btn" style="flex:1; background:#666;" onclick="document.getElementById('mobile-modal').style.display='none'">ODUSTANI</button>
+        </div>
+    </div>
 </div>
 
 <div class="container">
@@ -114,7 +133,7 @@
         <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
-    <table>
+    <table id="main-table">
         <thead>
             <tr>
                 <th style="width:30px">Rb</th>
@@ -147,18 +166,9 @@
             <textarea id="notes" rows="3" oninput="document.getElementById('notes-print').innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
 - Rok izvođenja po dogovoru.</textarea>
         </div>
-
-        <div style="margin-top: 40px; width: 250px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">
-            Potpis i pečat
-        </div>
-
-        <div class="thanks-msg">
-            Hvala na povjerenju!
-        </div>
-        
-        <div class="contact-info-print" style="text-align:center; font-size: 0.9em; color: #333; margin-top: 10px;">
-            Email: josippenava989@gmail.com | Tel: 063 247 233
-        </div>
+        <div style="margin-top: 40px; width: 250px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">Potpis i pečat</div>
+        <div class="thanks-msg">Hvala na povjerenju!</div>
+        <div class="contact-info-print" style="text-align:center; font-size: 0.9em; color: #333; margin-top: 10px;">Email: josippenava989@gmail.com | Tel: 063 247 233</div>
     </div>
 </div>
 
@@ -168,7 +178,7 @@
 </div>
 
 <script>
-// --- FIREBASE KONFIGURACIJA ---
+// --- KONFIGURACIJA (SVOJE PODATKE ZALIJEPI OVDJE) ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -177,8 +187,8 @@ const firebaseConfig = {
   messagingSenderId: "879052196775",
   appId: "1:879052196775:web:fa6338707f326635ca8482"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
+let currentRowRef = null;
 
 function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -191,8 +201,7 @@ function syncPrintText() {
 
 function calculate() {
     let s = 0;
-    const rows = document.querySelectorAll('#items-body tr');
-    rows.forEach((r, i) => {
+    document.querySelectorAll('#items-body tr').forEach((r, i) => {
         r.cells[0].innerText = i + 1;
         let q = parseFloat(r.querySelector('.qty').value) || 0;
         let p = parseFloat(r.querySelector('.price').value) || 0;
@@ -212,21 +221,47 @@ function addRow(d='', q=0, p=0) {
         <td style="text-align:center"></td>
         <td>
             <div class="print-text"></div>
-            <textarea class="desc" oninput="this.previousElementSibling.innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">${d}</textarea>
+            <textarea class="desc" onclick="handleMobileClick(this)" oninput="updateText(this)">${d}</textarea>
         </td>
-        <td><input type="number" class="qty" value="${q}" oninput="calculate()"></td>
-        <td><input type="number" class="price" value="${p}" oninput="calculate()"></td>
+        <td><input type="number" class="qty" value="${q}" onclick="handleMobileClick(this)" oninput="calculate()"></td>
+        <td><input type="number" class="price" value="${p}" onclick="handleMobileClick(this)" oninput="calculate()"></td>
         <td class="row-t" style="text-align:right">0,00</td>
-        <td class="action-col no-print" style="text-align:center;"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">X</button></td>
+        <td class="action-col no-print" style="text-align:center;"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer;">X</button></td>
     `;
     document.getElementById('items-body').appendChild(tr);
-    
-    const ta = tr.querySelector('textarea');
-    tr.querySelector('.print-text').innerText = d;
-    ta.style.height = 'auto';
-    ta.style.height = ta.scrollHeight + 'px';
-    
+    updateText(tr.querySelector('.desc'));
     calculate();
+}
+
+function updateText(el) {
+    el.previousElementSibling.innerText = el.value;
+    el.style.height = '';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+// Funkcija koja odlučuje hoće li otvoriti pop-up (ako je mobitel)
+function handleMobileClick(el) {
+    if (window.innerWidth <= 600) {
+        currentRowRef = el.closest('tr');
+        document.getElementById('modal-desc').value = currentRowRef.querySelector('.desc').value;
+        document.getElementById('modal-qty').value = currentRowRef.querySelector('.qty').value;
+        document.getElementById('modal-price').value = currentRowRef.querySelector('.price').value;
+        document.getElementById('mobile-modal').style.display = 'flex';
+        el.blur(); // Makni fokus s polja da se ne digne sistemska tipkovnica odmah
+    }
+}
+
+function saveModalChanges() {
+    if (currentRowRef) {
+        const descEl = currentRowRef.querySelector('.desc');
+        descEl.value = document.getElementById('modal-desc').value;
+        currentRowRef.querySelector('.qty').value = document.getElementById('modal-qty').value;
+        currentRowRef.querySelector('.price').value = document.getElementById('modal-price').value;
+        updateText(descEl);
+        calculate();
+        document.getElementById('mobile-modal').style.display = 'none';
+        currentRowRef = null;
+    }
 }
 
 async function saveData() {
@@ -245,7 +280,7 @@ async function saveData() {
         total: document.getElementById('total').innerText,
         date: new Date().toLocaleDateString('hr-HR')
     };
-    try { await db.collection("ponude").add(data); alert("Uspješno spremljeno u bazu!"); } catch (e) { alert("Greška: " + e); }
+    try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška: " + e); }
 }
 
 function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
@@ -254,16 +289,14 @@ async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
     const list = document.getElementById('admin-list');
     list.innerHTML = "Učitavam...";
-    try {
-        const snap = await db.collection("ponude").get();
-        list.innerHTML = "";
-        snap.forEach(doc => {
-            const d = doc.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
-            list.appendChild(tr);
-        });
-    } catch(e) { list.innerHTML = "Greška pri učitavanju."; }
+    const snap = await db.collection("ponude").get();
+    list.innerHTML = "";
+    snap.forEach(doc => {
+        const d = doc.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
+        list.appendChild(tr);
+    });
 }
 
 async function loadOffer(id) {
