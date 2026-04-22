@@ -45,8 +45,10 @@
             body { padding: 0; background: white; margin: 0; }
             .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; }
             .no-print, .btn, .action-col, #login-trigger { display: none !important; }
-            /* KLJUČNA PROMJENA: height: auto !important osigurava da se sav tekst vidi */
-            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; min-height: 0 !important; overflow: visible !important; display: block !important; }
+            
+            /* KLJUČNO ZA CIJELI TEKST: Postavljamo visinu na inicijalnu i dopuštamo širenje */
+            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; min-height: 1em !important; overflow: visible !important; display: block !important; white-space: pre-wrap !important; }
+            
             .logo-container { right: 1.5cm; top: 1.5cm; }
             input::placeholder { color: transparent; }
             .totals { float: right !important; }
@@ -103,11 +105,11 @@
     <table>
         <thead>
             <tr>
-                <th style="width:30px">Rb.</th>
+                <th style="width:30px">Rb</th>
                 <th>Opis radova</th>
-                <th style="width:80px">Površina (m2)</th>
-                <th style="width:100px">Cijena (KM/m2)</th>
-                <th style="width:120px">Ukupno (KM)</th>
+                <th style="width:80px">m2</th>
+                <th style="width:100px">KM/m2</th>
+                <th style="width:120px">Ukupno</th>
                 <th class="action-col no-print" style="width:40px"></th>
             </tr>
         </thead>
@@ -197,10 +199,10 @@ function addRow(d='', q=0, p=0) {
     `;
     document.getElementById('items-body').appendChild(tr);
     
-    // Ključno: Odmah postavi visinu teksta
+    // Ključno: Prisilno širenje textarea elementa na temelju sadržaja
     const ta = tr.querySelector('textarea');
     ta.style.height = 'auto';
-    ta.style.height = ta.scrollHeight + 'px';
+    ta.style.height = (ta.scrollHeight) + 'px';
     
     calculate();
 }
