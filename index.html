@@ -57,16 +57,16 @@
         /* STROGA PRAVILA ZA ISPIS BEZ HEADERA I FOOTERA */
         @page { size: auto; margin: 0mm; }
         @media print {
-            body { padding: 0; background: white; margin: 0; overflow: visible; }
-            .container { box-shadow: none; padding: 1.5cm; width: 100% !important; min-height: 100vh; border-radius: 0; display: block; transform: none !important; margin: 0 !important; }
+            body { padding: 0 !important; background: white !important; margin: 0 !important; overflow: visible !important; }
+            .container { box-shadow: none !important; padding: 1.5cm !important; width: 100% !important; min-height: 100vh !important; border-radius: 0 !important; display: block !important; transform: none !important; margin: 0 !important; }
             .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal { display: none !important; }
             .print-text { display: block !important; }
             th { background: #e3f2fd !important; -webkit-print-color-adjust: exact; }
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
-            .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
+            .logo-container { right: 1.5cm !important; top: 1.5cm !important; position: absolute !important; }
             tr { page-break-inside: avoid !important; }
-            .totals { float: right !important; width: 300px; }
-            .contact-info-print { display: block !important; text-align: center; margin-top: 5px; font-size: 0.9em; }
+            .totals { float: right !important; width: 300px !important; }
+            .contact-info-print { display: block !important; text-align: center !important; margin-top: 5px !important; font-size: 0.9em !important; }
         }
     </style>
 </head>
@@ -173,10 +173,11 @@
 
 <div class="no-print" style="text-align:center; margin-top:30px; padding-bottom: 50px; display: flex; justify-content: center; gap: 15px;">
     <button class="btn btn-save" onclick="saveData()">💾 SPREMI U BAZU</button>
-    <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ U PDF</button>
+    <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ u PDF</button>
 </div>
 
 <script>
+// --- FIREBASE KONFIGURACIJA ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -186,13 +187,17 @@ const firebaseConfig = {
   appId: "1:879052196775:web:fa6338707f326635ca8482"
 };
 
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 let currentRowRef = null;
 
 function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function syncPrintText() {
     document.querySelectorAll('#items-body tr').forEach(r => {
-        r.querySelector('.print-text').innerText = r.querySelector('.desc').value;
+        const textareaVal = r.querySelector('.desc').value;
+        r.querySelector('.print-text').innerText = textareaVal;
     });
     document.getElementById('notes-print').innerText = document.getElementById('notes').value;
 }
@@ -238,7 +243,6 @@ function updateText(el) {
 }
 
 function handleInputClick(el) {
-    // MODAL SE OTVARA SAMO NA MOBITELU (ispod 600px širine)
     if (window.innerWidth <= 600) {
         currentRowRef = el.closest('tr');
         document.getElementById('modal-desc').value = currentRowRef.querySelector('.desc').value;
@@ -263,16 +267,35 @@ function saveModalChanges() {
 }
 
 async function saveData() {
-    const items = [];
-    document.querySelectorAll('#items-body tr').forEach(r => {
-        items.push({ d: r.querySelector('.desc').value, q: parseFloat(r.querySelector('.qty').value), p: parseFloat(r.querySelector('.price').value) });
-    });
-    const data = {
-        name: document.getElementById('cName').value, addr: document.getElementById('cAddr').value, city: document.getElementById('cCity').value,
-        num: document.getElementById('offerNum').value, manualDate: document.getElementById('manualDate').value, note: document.getElementById('notes').value,
-        items: items, total: document.getElementById('total').innerText, date: new Date().toLocaleDateString('hr-HR'), isDeleted: false
-    };
-    try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška!"); }
+    try {
+        const items = [];
+        document.querySelectorAll('#items-body tr').forEach(r => {
+            items.push({ 
+                d: r.querySelector('.desc').value, 
+                q: parseFloat(r.querySelector('.qty').value) || 0, 
+                p: parseFloat(r.querySelector('.price').value) || 0 
+            });
+        });
+        
+        const data = {
+            name: document.getElementById('cName').value, 
+            addr: document.getElementById('cAddr').value, 
+            city: document.getElementById('cCity').value,
+            num: document.getElementById('offerNum').value, 
+            manualDate: document.getElementById('manualDate').value, 
+            note: document.getElementById('notes').value,
+            items: items, 
+            total: document.getElementById('total').innerText, 
+            date: new Date().toLocaleDateString('hr-HR'), 
+            isDeleted: false
+        };
+        
+        await db.collection("ponude").add(data); 
+        alert("Spremljeno u bazu podataka!"); 
+    } catch (e) { 
+        console.error("Firebase greška:", e);
+        alert("Greška pri spremanju! Provjerite Firebase konfiguraciju."); 
+    }
 }
 
 async function deleteOffer(id) {
@@ -285,22 +308,35 @@ function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
 
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
-    const list = document.getElementById('admin-list'); list.innerHTML = "Učitavam...";
-    const snap = await db.collection("ponude").where("isDeleted", "==", false).get(); list.innerHTML = "";
-    snap.forEach(doc => {
-        const d = doc.data();
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button> <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button></td>`;
-        list.appendChild(tr);
-    });
+    const list = document.getElementById('admin-list'); 
+    list.innerHTML = "Učitavam...";
+    try {
+        const snap = await db.collection("ponude").where("isDeleted", "==", false).get(); 
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button> <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button></td>`;
+            list.appendChild(tr);
+        });
+    } catch (e) {
+        list.innerHTML = "Greška pri učitavanju. Provjerite Firebase pravila.";
+    }
 }
 
 async function loadOffer(id) {
-    const doc = await db.collection("ponude").doc(id).get(); const d = doc.data();
-    document.getElementById('cName').value = d.name; document.getElementById('cAddr').value = d.addr; document.getElementById('cCity').value = d.city;
-    document.getElementById('offerNum').value = d.num; document.getElementById('manualDate').value = d.manualDate || "";
-    document.getElementById('notes').value = d.note; document.getElementById('items-body').innerHTML = "";
-    d.items.forEach(i => addRow(i.d, i.q, i.p)); syncPrintText(); closeAdmin();
+    const doc = await db.collection("ponude").doc(id).get(); 
+    const d = doc.data();
+    document.getElementById('cName').value = d.name; 
+    document.getElementById('cAddr').value = d.addr; 
+    document.getElementById('cCity').value = d.city;
+    document.getElementById('offerNum').value = d.num; 
+    document.getElementById('manualDate').value = d.manualDate || "";
+    document.getElementById('notes').value = d.note; 
+    document.getElementById('items-body').innerHTML = "";
+    d.items.forEach(i => addRow(i.d, i.q, i.p)); 
+    syncPrintText(); 
+    closeAdmin();
 }
 
 function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
