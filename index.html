@@ -10,7 +10,7 @@
     
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; color: #333; }
-        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; min-height: 1000px; display: flex; flex-direction: column; }
+        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; min-height: 1050px; display: flex; flex-direction: column; box-sizing: border-box; }
         
         .logo-container { position: absolute; top: 40px; right: 50px; }
         .logo-container img { max-width: 120px; height: auto; }
@@ -18,8 +18,8 @@
         #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 30px; box-sizing: border-box; }
         #login-trigger { position: fixed; bottom: 20px; right: 20px; font-size: 24px; cursor: pointer; opacity: 0.1; z-index: 1001; }
         
-        .header-info { margin-bottom: 40px; width: 60%; }
-        .client-box { margin-bottom: 40px; width: 50%; margin-top: 20px; }
+        .header-info { margin-bottom: 30px; width: 60%; }
+        .client-box { margin-bottom: 30px; width: 50%; margin-top: 10px; }
         
         input, textarea { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
         
@@ -32,21 +32,25 @@
         .btn-save { background: #f39c12; }
         .btn-print { background: #008CBA; }
         
-        .totals { float: right; width: 300px; margin-top: 20px; }
+        /* Obračun desno kao u originalu */
+        .totals-wrapper { overflow: hidden; margin-top: 20px; }
+        .totals { float: right; width: 300px; }
         .totals div { display: flex; justify-content: space-between; padding: 5px; }
         .grand-total { font-weight: bold; border-top: 2px solid #333; font-size: 1.2em; margin-top: 10px; }
 
-        .footer-content { margin-top: auto; }
-        .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 50px; font-size: 1.1em; }
+        .footer-content { margin-top: auto; width: 100%; }
+        .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        @page { size: auto; margin: 0mm; } /* Ključno za micanje browser headera */
+        /* Micanje headera i footera preglednika */
+        @page { size: auto; margin: 0; }
         @media print {
             body { padding: 0; background: white; margin: 0; }
-            .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; }
+            .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; }
             .no-print, .btn, .action-col, #login-trigger { display: none !important; }
             input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; }
             input::placeholder { color: transparent; }
+            .totals { float: right !important; }
         }
     </style>
 </head>
@@ -73,21 +77,21 @@
     <div class="header-info">
         <h2 style="margin:0;">Gradnja Penava</h2>
         <p style="font-size:0.9em; line-height:1.4">
-            Gradnja Penava vl. Josip Penava [cite: 24]<br>
-            Vitina 426, Ljubuški [cite: 25]<br>
-            ID broj: 4372882170003 [cite: 26]<br>
-            Račun: 1613000133054082 [cite: 27]
+            Gradnja Penava vl. Josip Penava<br>
+            Vitina 426, Ljubuški<br>
+            ID broj: 4372882170003<br>
+            Račun: 1613000133054082
         </p>
     </div>
 
     <div class="client-box">
-        <input type="text" id="cName" placeholder="Ime/Naziv naručitelja" value="Srednja strukovna škola Ruđera Boškovića"> [cite: 29]
-        <input type="text" id="cAddr" placeholder="Adresa" value="Sestre Silvije Antić 1, Humac 88320"> [cite: 30]
-        <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina"> [cite: 31]
+        <input type="text" id="cName" placeholder="Ime/Naziv naručitelja" value="Srednja strukovna škola Ruđera Boškovića">
+        <input type="text" id="cAddr" placeholder="Adresa naručitelja" value="Sestre Silvije Antić 1, Humac 88320">
+        <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina">
     </div>
 
     <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-        <span style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span> [cite: 22]
+        <span style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
         <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
@@ -105,27 +109,31 @@
         <tbody id="items-body"></tbody>
     </table>
 
-    <button class="btn btn-add no-print" onclick="addRow()">+ Dodaj stavku</button>
+    <div class="no-print">
+        <button class="btn btn-add" onclick="addRow()">+ Dodaj stavku</button>
+    </div>
 
-    <div class="totals">
-        <div><span>Ukupno:</span> <span id="sub">0,00 KM</span></div> [cite: 33]
-        <div><span>PDV 17%:</span> <span id="vat">0,00 KM</span></div> [cite: 34]
-        <div class="grand-total"><span>ZA PLATITI:</span> <span id="total">0,00 KM</span></div> [cite: 35]
+    <div class="totals-wrapper">
+        <div class="totals">
+            <div><span>Ukupno:</span> <span id="sub">0,00 KM</span></div>
+            <div><span>PDV 17%:</span> <span id="vat">0,00 KM</span></div>
+            <div class="grand-total"><span>ZA PLATITI:</span> <span id="total">0,00 KM</span></div>
+        </div>
     </div>
 
     <div class="footer-content">
-        <div style="clear:both; padding-top:40px">
-            <strong>Napomena:</strong> [cite: 36]
-            <textarea id="notes" rows="3" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke. [cite: 37]
-- Rok izvođenja po dogovoru. [cite: 37]</textarea>
+        <div style="padding-top:40px">
+            <strong>Napomena:</strong>
+            <textarea id="notes" rows="3" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
+- Rok izvođenja po dogovoru.</textarea>
         </div>
 
         <div style="margin-top: 40px; width: 250px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">
-            Potpis i pečat [cite: 39]
+            Potpis i pečat
         </div>
 
         <div class="thanks-msg">
-            Hvala na povjerenju! [cite: 40]
+            Hvala na povjerenju!
         </div>
         
         <div style="text-align:center; font-size: 0.8em; color: #666; margin-top: 10px;" class="no-print">
@@ -140,6 +148,7 @@
 </div>
 
 <script>
+// --- FIREBASE KONFIGURACIJA ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -156,7 +165,8 @@ function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2
 
 function calculate() {
     let s = 0;
-    document.querySelectorAll('#items-body tr').forEach((r, i) => {
+    const rows = document.querySelectorAll('#items-body tr');
+    rows.forEach((r, i) => {
         r.cells[0].innerText = i + 1;
         let q = parseFloat(r.querySelector('.qty').value) || 0;
         let p = parseFloat(r.querySelector('.price').value) || 0;
@@ -199,22 +209,27 @@ async function saveData() {
         total: document.getElementById('total').innerText,
         date: new Date().toLocaleDateString('hr-HR')
     };
-    try { await db.collection("ponude").add(data); alert("Ponuda spremljena!"); } catch (e) { alert("Greška: " + e); }
+    try { await db.collection("ponude").add(data); alert("Uspješno spremljeno u bazu!"); } catch (e) { alert("Greška: " + e); }
 }
 
 function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
+
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
     const list = document.getElementById('admin-list');
-    list.innerHTML = "";
-    const snap = await db.collection("ponude").get();
-    snap.forEach(doc => {
-        const d = doc.data();
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
-        list.appendChild(tr);
-    });
+    list.innerHTML = "Učitavam...";
+    try {
+        const snap = await db.collection("ponude").get();
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
+            list.appendChild(tr);
+        });
+    } catch(e) { list.innerHTML = "Greška pri učitavanju."; }
 }
+
 async function loadOffer(id) {
     const doc = await db.collection("ponude").doc(id).get();
     const d = doc.data();
@@ -227,8 +242,13 @@ async function loadOffer(id) {
     d.items.forEach(i => addRow(i.d, i.q, i.p));
     closeAdmin();
 }
+
 function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-window.onload = () => { addRow("Zaštita i priprema...", 3900, 1); addRow("Molovanje zidova...", 3900, 5); }; [cite: 32]
+
+window.onload = () => { 
+    addRow("Zaštita i priprema zidova i plafona za molovanje (bez materijala)", 3900, 1); 
+    addRow("Molovanje zidova i plafona disperzivnom bojom, 2 premaza u jednom svijetlom tonu (bez materijala)", 3900, 5); 
+};
 </script>
 </body>
 </html>
