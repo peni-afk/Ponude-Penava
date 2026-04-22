@@ -21,21 +21,19 @@
         .header-info { margin-bottom: 30px; width: 60%; }
         .client-box { margin-bottom: 30px; width: 50%; margin-top: 10px; }
         
-        input, textarea { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+        input, textarea, select { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
         
         .print-text { display: none; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; padding: 0; }
 
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        
-        /* NOVO: Svijetlo plava boja zaglavlja */
         th { background: #e3f2fd; border: 1px solid #ddd; padding: 12px; text-align: left; color: #1565c0; }
-        
         td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
         
         .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; }
         .btn-add { background: #4CAF50; margin-bottom: 20px; }
         .btn-save { background: #f39c12; }
         .btn-print { background: #008CBA; }
+        .btn-delete { background: #f44336; padding: 5px 10px; font-size: 12px; }
         
         .totals-wrapper { overflow: hidden; margin-top: 20px; }
         .totals { float: right; width: 300px; }
@@ -45,13 +43,11 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        /* --- STIL ZA MODAL (POP-UP) --- */
         #mobile-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
         .modal-content { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* MODIFIKACIJA: Maknut min-height i širina na mobitelu da ostane sitnije */
         @media screen and (max-width: 600px) {
             .container { padding: 20px; min-height: auto; width: 850px; transform: scale(0.45); transform-origin: top left; margin-bottom: -500px; }
             body { overflow-x: auto; width: 100%; }
@@ -61,13 +57,12 @@
         @media print {
             body { padding: 0; background: white; margin: 0; overflow: visible; }
             .container { box-shadow: none; padding: 1.5cm; width: 100% !important; min-height: 100vh; border-radius: 0; display: block; transform: none !important; margin: 0 !important; }
-            .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal { display: none !important; }
+            .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal, select { display: none !important; }
             .print-text { display: block !important; }
             th { background: #e3f2fd !important; -webkit-print-color-adjust: exact; }
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
             tr { page-break-inside: avoid !important; }
-            input::placeholder { color: transparent; }
             .totals { float: right !important; width: 300px; }
             .contact-info-print { display: block !important; text-align: center; margin-top: 5px; font-size: 0.9em; }
         }
@@ -78,12 +73,12 @@
 <div id="login-trigger" class="no-print" onclick="promptLogin()">⚙️</div>
 
 <div id="admin-panel" class="no-print">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
         <h1>Arhiva Ponuda</h1>
         <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
     </div>
-    <table style="width:100%;">
-        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
+    <table style="width:100%; margin-top: 20px;">
+        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Status</th><th>Iznos</th><th>Akcija</th></tr></thead>
         <tbody id="admin-list"></tbody>
     </table>
 </div>
@@ -128,6 +123,16 @@
         <input type="text" id="cName" placeholder="Ime/Naziv" value="Srednja strukovna škola Ruđera Boškovića">
         <input type="text" id="cAddr" placeholder="Adresa" value="Sestre Silvije Antić 1, Humac 88320">
         <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina">
+    </div>
+
+    <div style="margin-bottom: 20px;" class="no-print">
+        <strong>Status ponude:</strong>
+        <select id="offerStatus" style="width: 200px; display: inline-block; margin-left: 10px;">
+            <option value="Aktivna">🟡 Aktivna (Poslano)</option>
+            <option value="Prihvaćena">🟢 Prihvaćena</option>
+            <option value="Završena">🔵 Završena / Naplaćena</option>
+            <option value="Odbijena">🔴 Odbijena</option>
+        </select>
     </div>
 
     <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
@@ -180,7 +185,7 @@
 </div>
 
 <script>
-// --- KONFIGURACIJA ---
+// --- KONFIGURACIJA (ZALIJEPI SVOJE PODATKE OVDJE) ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -242,8 +247,6 @@ function updateText(el) {
 }
 
 function handleInputClick(el) {
-    // Modal se otvara na svim uređajima (i mobitel i desktop) za konzistenciju, 
-    // ali fokus na desktopu ostaje u polju ako želiš.
     currentRowRef = el.closest('tr');
     document.getElementById('modal-desc').value = currentRowRef.querySelector('.desc').value;
     document.getElementById('modal-qty').value = currentRowRef.querySelector('.qty').value;
@@ -271,11 +274,28 @@ async function saveData() {
         items.push({ d: r.querySelector('.desc').value, q: parseFloat(r.querySelector('.qty').value), p: parseFloat(r.querySelector('.price').value) });
     });
     const data = {
-        name: document.getElementById('cName').value, addr: document.getElementById('cAddr').value, city: document.getElementById('cCity').value,
-        num: document.getElementById('offerNum').value, manualDate: document.getElementById('manualDate').value, note: document.getElementById('notes').value,
-        items: items, total: document.getElementById('total').innerText, date: new Date().toLocaleDateString('hr-HR')
+        name: document.getElementById('cName').value, 
+        addr: document.getElementById('cAddr').value, 
+        city: document.getElementById('cCity').value,
+        num: document.getElementById('offerNum').value, 
+        manualDate: document.getElementById('manualDate').value, 
+        note: document.getElementById('notes').value,
+        status: document.getElementById('offerStatus').value,
+        items: items, 
+        total: document.getElementById('total').innerText, 
+        date: new Date().toLocaleDateString('hr-HR'),
+        isDeleted: false // Polje za meko brisanje
     };
     try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška!"); }
+}
+
+async function deleteOffer(id) {
+    if(confirm("Jeste li sigurni da želite obrisati ovu ponudu?")) {
+        try {
+            await db.collection("ponude").doc(id).update({ isDeleted: true });
+            openAdmin(); // Osvježi listu
+        } catch (e) { alert("Greška pri brisanju."); }
+    }
 }
 
 function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
@@ -283,11 +303,22 @@ function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
     const list = document.getElementById('admin-list'); list.innerHTML = "Učitavam...";
-    const snap = await db.collection("ponude").get(); list.innerHTML = "";
+    // Dohvaćamo samo one koji NISU obrisani
+    const snap = await db.collection("ponude").where("isDeleted", "==", false).get(); 
+    list.innerHTML = "";
     snap.forEach(doc => {
         const d = doc.data();
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
+        tr.innerHTML = `
+            <td>${d.date}</td>
+            <td>${d.num}</td>
+            <td>${d.name}</td>
+            <td><strong>${d.status || 'Aktivna'}</strong></td>
+            <td>${d.total}</td>
+            <td>
+                <button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button>
+                <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button>
+            </td>`;
         list.appendChild(tr);
     });
 }
@@ -296,7 +327,9 @@ async function loadOffer(id) {
     const doc = await db.collection("ponude").doc(id).get(); const d = doc.data();
     document.getElementById('cName').value = d.name; document.getElementById('cAddr').value = d.addr; document.getElementById('cCity').value = d.city;
     document.getElementById('offerNum').value = d.num; document.getElementById('manualDate').value = d.manualDate || "";
-    document.getElementById('notes').value = d.note; document.getElementById('items-body').innerHTML = "";
+    document.getElementById('notes').value = d.note; 
+    document.getElementById('offerStatus').value = d.status || 'Aktivna';
+    document.getElementById('items-body').innerHTML = "";
     d.items.forEach(i => addRow(i.d, i.q, i.p)); syncPrintText(); closeAdmin();
 }
 
