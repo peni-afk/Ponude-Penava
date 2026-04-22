@@ -45,7 +45,7 @@
             body { padding: 0; background: white; margin: 0; }
             .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; }
             .no-print, .btn, .action-col, #login-trigger { display: none !important; }
-            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; overflow: hidden !important; }
+            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; overflow: visible !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; }
             input::placeholder { color: transparent; }
             .totals { float: right !important; }
@@ -63,7 +63,7 @@
         <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
     </div>
     <table style="width:100%;">
-        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
+        <thead><tr><th>Datum (Spremanja)</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
         <tbody id="admin-list"></tbody>
     </table>
 </div>
@@ -75,12 +75,16 @@
 
     <div class="header-info">
         <h2 style="margin:0;">Gradnja Penava</h2>
-        <p style="font-size:0.9em; line-height:1.4">
+        <p style="font-size:0.9em; line-height:1.4; margin-bottom: 5px;">
             Gradnja Penava vl. Josip Penava<br>
             Vitina 426, Ljubuški<br>
             ID broj: 4372882170003<br>
             Račun: 1613000133054082
         </p>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 0.9em;">
+            <strong>Datum ponude:</strong>
+            <input type="text" id="manualDate" style="width: 150px; border: none; border-bottom: 1px solid #eee; padding: 2px;" placeholder="Upiši datum">
+        </div>
     </div>
 
     <div class="client-box">
@@ -191,6 +195,9 @@ function addRow(d='', q=0, p=0) {
         <td class="action-col no-print" style="text-align:center;"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">X</button></td>
     `;
     document.getElementById('items-body').appendChild(tr);
+    // Automatsko širenje teksta pri učitavanju ako ima sadržaja
+    const ta = tr.querySelector('textarea');
+    if(d) { ta.style.height = ta.scrollHeight + 'px'; }
     calculate();
 }
 
@@ -204,6 +211,7 @@ async function saveData() {
         addr: document.getElementById('cAddr').value,
         city: document.getElementById('cCity').value,
         num: document.getElementById('offerNum').value,
+        manualDate: document.getElementById('manualDate').value,
         note: document.getElementById('notes').value,
         items: items,
         total: document.getElementById('total').innerText,
@@ -237,6 +245,7 @@ async function loadOffer(id) {
     document.getElementById('cAddr').value = d.addr;
     document.getElementById('cCity').value = d.city;
     document.getElementById('offerNum').value = d.num;
+    document.getElementById('manualDate').value = d.manualDate || "";
     document.getElementById('notes').value = d.note;
     document.getElementById('items-body').innerHTML = "";
     d.items.forEach(i => addRow(i.d, i.q, i.p));
