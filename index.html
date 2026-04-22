@@ -32,7 +32,6 @@
         .btn-save { background: #f39c12; }
         .btn-print { background: #008CBA; }
         
-        /* Obračun desno kao u originalu */
         .totals-wrapper { overflow: hidden; margin-top: 20px; }
         .totals { float: right; width: 300px; }
         .totals div { display: flex; justify-content: space-between; padding: 5px; }
@@ -41,16 +40,16 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        /* Micanje headera i footera preglednika */
         @page { size: auto; margin: 0; }
         @media print {
             body { padding: 0; background: white; margin: 0; }
             .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; }
             .no-print, .btn, .action-col, #login-trigger { display: none !important; }
-            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; }
+            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; overflow: hidden !important; }
             .logo-container { right: 1.5cm; top: 1.5cm; }
             input::placeholder { color: transparent; }
             .totals { float: right !important; }
+            .contact-info-print { display: block !important; text-align: center; margin-top: 5px; font-size: 0.9em; }
         }
     </style>
 </head>
@@ -85,8 +84,9 @@
     </div>
 
     <div class="client-box">
-        <input type="text" id="cName" placeholder="Ime/Naziv naručitelja" value="Srednja strukovna škola Ruđera Boškovića">
-        <input type="text" id="cAddr" placeholder="Adresa naručitelja" value="Sestre Silvije Antić 1, Humac 88320">
+        <strong>Naručitelj:</strong>
+        <input type="text" id="cName" placeholder="Ime/Naziv" value="Srednja strukovna škola Ruđera Boškovića">
+        <input type="text" id="cAddr" placeholder="Adresa" value="Sestre Silvije Antić 1, Humac 88320">
         <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina">
     </div>
 
@@ -121,7 +121,7 @@
         </div>
     </div>
 
-<div class="footer-content">
+    <div class="footer-content">
         <div style="padding-top:40px">
             <strong>Napomena:</strong>
             <textarea id="notes" rows="3" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
@@ -132,11 +132,11 @@
             Potpis i pečat
         </div>
 
-        <div class="thanks-msg" style="text-align: center; font-style: italic; font-weight: bold; margin-top: 50px;">
+        <div class="thanks-msg">
             Hvala na povjerenju!
         </div>
         
-        <div class="contact-info-print" style="text-align: center; margin-top: 5px; font-size: 0.9em;">
+        <div class="contact-info-print" style="text-align:center; font-size: 0.9em; color: #333; margin-top: 10px;">
             Email: josippenava989@gmail.com | Tel: 063 247 233
         </div>
     </div>
