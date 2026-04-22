@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustav Ponuda - Gradnja Penava</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root { --primary: #008CBA; --secondary: #f39c12; --success: #4CAF50; --danger: #f44336; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; color: #333; }
+        
+        /* Layout */
+        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 8px; position: relative; }
+        
+        /* Admin Panel Overlay */
+        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 30px; box-sizing: border-box; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        
+        /* Login Icon */
+        #login-trigger { position: fixed; bottom: 20px; right: 20px; font-size: 24px; cursor: pointer; opacity: 0.3; transition: 0.3s; z-index: 1001; }
+        #login-trigger:hover { opacity: 1; transform: rotate(90deg); }
+
+        /* UI Elements */
+        .logo-container { text-align: center; margin-bottom: 30px; }
+        .logo-container img { max-width: 200px; }
+        .header-flex { display: flex; justify-content: space-between; margin-bottom: 40px; gap: 20px; }
+        .box { width: 48%; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; text-align: left; }
+        td { border: 1px solid #ddd; padding: 8px; }
+        .qty, .price { text-align: right; }
+        
+        /* Buttons */
+        .btn { padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-save { background: var(--secondary); color: white; }
+        .btn-print { background: var(--primary); color: white; }
+        .btn-add { background: var(--success); color: white; margin-bottom: 20px; }
+        .btn-close { background: #666; color: white; }
+        
+        /* Admin Table */
+        .admin-table { width: 100%; border-radius: 8px; overflow: hidden; }
+        .admin-table tr:hover { background: #f1f1f1; cursor: pointer; }
+
+        @media print {
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; padding: 0; width: 100%; max-width: none; }
+            .no-print, .btn, .action-col, #login-trigger { display: none !important; }
+            input, textarea { border: none !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="login-trigger" class="no-print" onclick="promptLogin()">⚙️</div>
+
+<div id="admin-panel" class="no-print">
+    <div class="admin-header">
+        <h1>Popis svih ponuda (Arhiva)</h1>
+        <button class="btn btn-close" onclick="closeAdmin()">Zatvori X</button>
+    </div>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Broj ponude</th>
+                <th>Naručitelj</th>
+                <th>Iznos (s PDV)</th>
+                <th>Akcija</th>
+            </tr>
+        </thead>
+        <tbody id="admin-list">
+            </tbody>
+    </table>
+</div>
+
+<div class="container">
+    <div class="logo-container">
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none';">
+    </div>
+
+    <div class="header-flex">
+        <div class="box">
+            <h2 style="margin:0; color: #444;">Gradnja Penava</h2>
+            <p style="font-size:0.9em; line-height:1.5">
+                Vl. Josip Penava<br>
+                Vitina 426, Ljubuški<br>
+                ID: 4372882170003<br>
+                Račun: 1613000133054082
+            </p>
+        </div>
+        <div class="box">
+            <label>Naručitelj:</label>
+            <input type="text" id="cName" placeholder="Ime/Naziv">
+            <input type="text" id="cAddr" placeholder="Adresa">
+            <input type="text" id="cCity" placeholder="Grad/Mjesto">
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-bottom:30px;">
+        <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; text-align:center; border:none; border-bottom: 2px solid #eee; width: 60%;" placeholder="PONUDA br. ___">
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Rb</th>
+                <th>Opis radova</th>
+                <th style="width:80px">m2</th>
+                <th style="width:100px">KM/m2</th>
+                <th style="width:120px">Ukupno</th>
+                <th class="action-col no-print"></th>
+            </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+    </table>
+
+    <button class="btn btn-add no-print" onclick="addRow()">+ Dodaj stavku</button>
+
+    <div style="float:right; width: 300px;">
+        <div style="display:flex; justify-content:space-between; padding:5px"><span>Ukupno:</span> <span id="sub">0,00 KM</span></div>
+        <div style="display:flex; justify-content:space-between; padding:5px"><span>PDV (17%):</span> <span id="vat">0,00 KM</span></div>
+        <div style="display:flex; justify-content:space-between; padding:10px 5px; font-weight:bold; border-top: 2px solid #333; font-size:1.2em">
+            <span>SVEUKUPNO:</span> <span id="total">0,00 KM</span>
+        </div>
+    </div>
+
+    <div style="clear:both; padding-top:40px">
+        <strong>Napomena:</strong>
+        <textarea id="notes" rows="3" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'">- Rok izvođenja po dogovoru.</textarea>
+    </div>
+
+    <div style="margin-top: 60px; display: flex; justify-content: space-between;">
+        <div style="width: 200px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">Potpis i pečat</div>
+        <div style="text-align: right; font-style: italic;">Hvala na povjerenju!</div>
+    </div>
+</div>
+
+<div class="no-print" style="text-align:center; margin-top:30px; padding-bottom: 50px; display: flex; justify-content: center; gap: 15px;">
+    <button class="btn btn-save" onclick="saveData()">💾 SPREMI U BAZU</button>
+    <button class="btn btn-print" onclick="window.print()">🖨️ ISPRINTAJ U PDF</button>
+</div>
+
+<script>
+// --- FIREBASE KONFIGURACIJA (ZAMIJENI SVOJIM) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
+  authDomain: "ponude---penava.firebaseapp.com",
+  projectId: "ponude---penava",
+  storageBucket: "ponude---penava.firebasestorage.app",
+  messagingSenderId: "879052196775",
+  appId: "1:879052196775:web:fa6338707f326635ca8482"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// --- LOGIKA APLIKACIJE ---
+
+function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function calculate() {
+    let s = 0;
+    document.querySelectorAll('#items-body tr').forEach((r, i) => {
+        r.cells[0].innerText = i + 1;
+        let q = parseFloat(r.querySelector('.qty').value) || 0;
+        let p = parseFloat(r.querySelector('.price').value) || 0;
+        let t = q * p;
+        r.querySelector('.row-t').innerText = format(t);
+        s += t;
+    });
+    let v = s * 0.17;
+    document.getElementById('sub').innerText = format(s) + " KM";
+    document.getElementById('vat').innerText = format(v) + " KM";
+    document.getElementById('total').innerText = format(s + v) + " KM";
+}
+
+function addRow(d='', q=0, p=0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="text-align:center"></td>
+        <td><textarea class="desc" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'">${d}</textarea></td>
+        <td><input type="number" class="qty" value="${q}" oninput="calculate()"></td>
+        <td><input type="number" class="price" value="${p}" oninput="calculate()"></td>
+        <td class="row-t" style="text-align:right">0,00</td>
+        <td class="action-col no-print"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer">X</button></td>
+    `;
+    document.getElementById('items-body').appendChild(tr);
+    calculate();
+}
+
+// Spremanje u Firebase
+async function saveData() {
+    const items = [];
+    document.querySelectorAll('#items-body tr').forEach(r => {
+        items.push({
+            d: r.querySelector('.desc').value,
+            q: parseFloat(r.querySelector('.qty').value),
+            p: parseFloat(r.querySelector('.price').value)
+        });
+    });
+
+    const data = {
+        name: document.getElementById('cName').value,
+        addr: document.getElementById('cAddr').value,
+        city: document.getElementById('cCity').value,
+        num: document.getElementById('offerNum').value,
+        note: document.getElementById('notes').value,
+        items: items,
+        total: document.getElementById('total').innerText,
+        date: new Date().toLocaleDateString('hr-HR')
+    };
+
+    try {
+        await db.collection("ponude").add(data);
+        alert("Ponuda uspješno spremljena u bazu!");
+    } catch (e) { alert("Greška: " + e); }
+}
+
+// Admin Funkcije
+function promptLogin() {
+    const pass = prompt("Unesite administratorsku lozinku:");
+    if (pass === "789xy1234") {
+        openAdmin();
+    } else {
+        alert("Pogrešna lozinka!");
+    }
+}
+
+async function openAdmin() {
+    document.getElementById('admin-panel').style.display = 'block';
+    const list = document.getElementById('admin-list');
+    list.innerHTML = "Učitavam...";
+    
+    const snapshot = await db.collection("ponude").orderBy('date', 'desc').get();
+    list.innerHTML = "";
+    
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${d.date}</td>
+            <td>${d.num}</td>
+            <td>${d.name}</td>
+            <td>${d.total}</td>
+            <td><button class="btn btn-print" onclick="loadOffer('${doc.id}')">Otvori</button></td>
+        `;
+        list.appendChild(tr);
+    });
+}
+
+async function loadOffer(id) {
+    const doc = await db.collection("ponude").doc(id).get();
+    const data = doc.data();
+    
+    document.getElementById('cName').value = data.name;
+    document.getElementById('cAddr').value = data.addr;
+    document.getElementById('cCity').value = data.city;
+    document.getElementById('offerNum').value = data.num;
+    document.getElementById('notes').value = data.note;
+    
+    document.getElementById('items-body').innerHTML = "";
+    data.items.forEach(i => addRow(i.d, i.q, i.p));
+    
+    closeAdmin();
+}
+
+function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
+
+window.onload = () => { if(!document.getElementById('items-body').innerHTML) addRow(); };
+</script>
+</body>
+</html>
