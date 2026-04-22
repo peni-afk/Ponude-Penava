@@ -9,66 +9,62 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 10px; background-color: #f0f2f5; color: #333; }
-        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; min-height: 1050px; display: flex; flex-direction: column; box-sizing: border-box; }
         
-        .logo-container { text-align: right; margin-bottom: 20px; }
-        .logo-container img { max-width: 100px; height: auto; }
+        .logo-container { position: absolute; top: 40px; right: 50px; }
+        .logo-container img { max-width: 120px; height: auto; }
 
-        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 30px; box-sizing: border-box; }
         #login-trigger { position: fixed; bottom: 20px; right: 20px; font-size: 24px; cursor: pointer; opacity: 0.1; z-index: 1001; }
         
-        .header-info { margin-bottom: 20px; }
-        .client-box { margin-bottom: 20px; background: #fafafa; padding: 10px; border-radius: 5px; }
+        .header-info { margin-bottom: 30px; width: 60%; }
+        .client-box { margin-bottom: 30px; width: 50%; margin-top: 10px; }
         
-        input, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 16px; /* 16px sprečava auto-zoom na iPhoneu */ }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
         
-        .print-text { display: none; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }
+        .print-text { display: none; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; padding: 0; }
 
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; text-align: left; }
         td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
         
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; display: inline-block; text-align: center; font-size: 14px; }
-        .btn-add { background: #4CAF50; width: 100%; margin-bottom: 20px; }
-        .btn-save { background: #f39c12; flex: 1; }
-        .btn-print { background: #008CBA; flex: 1; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; }
+        .btn-add { background: #4CAF50; margin-bottom: 20px; }
+        .btn-save { background: #f39c12; }
+        .btn-print { background: #008CBA; }
         
-        .totals-wrapper { margin-top: 20px; }
-        .totals { float: right; width: 100%; max-width: 300px; }
+        .totals-wrapper { overflow: hidden; margin-top: 20px; }
+        .totals { float: right; width: 300px; }
         .totals div { display: flex; justify-content: space-between; padding: 5px; }
         .grand-total { font-weight: bold; border-top: 2px solid #333; font-size: 1.2em; margin-top: 10px; }
 
-        .footer-content { margin-top: auto; padding-top: 30px; }
-        .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 30px; }
+        .footer-content { margin-top: auto; width: 100%; }
+        .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        /* MOBILNA OPTIMIZACIJA (Ekran manji od 600px) */
+        /* --- MOBILNA OPTIMIZACIJA (SAMO ZA EKRAN) --- */
         @media screen and (max-width: 600px) {
-            .container { padding: 15px; }
-            .logo-container { position: static; text-align: center; }
-            .header-info, .client-box { width: 100% !important; }
-            
-            /* Pretvaranje tablice u listu/kartice za lakši unos na mobitelu */
-            thead { display: none; }
-            tr { display: block; border: 1px solid #ccc; margin-bottom: 15px; padding: 10px; border-radius: 8px; background: #fff; }
-            td { display: block; border: none; padding: 5px 0; position: relative; text-align: right; }
-            td:before { content: attr(data-label); float: left; font-weight: bold; }
-            td:last-child { text-align: center; border-top: 1px solid #eee; margin-top: 5px; }
+            body { padding: 5px; }
+            .container { padding: 20px; min-height: auto; }
+            .header-info, .client-box, .totals { width: 100%; float: none; }
+            .logo-container { position: static; text-align: center; margin-bottom: 20px; }
+            input, textarea, .btn { font-size: 16px !important; } /* Lakše za mobitel */
+            table { display: block; overflow-x: auto; } /* Omogućuje scroll ako je tablica preširoka */
         }
 
-        /* PRINT POSTAVKE */
+        /* --- PRINT (NETAKNUTO, KAKO JE RADILO) --- */
+        @page { size: auto; margin: 0; }
         @media print {
             body { padding: 0; background: white; margin: 0; }
             .container { box-shadow: none; padding: 1.5cm; width: 100%; min-height: 100vh; border-radius: 0; display: block; }
             .no-print, .btn, .action-col, #login-trigger, textarea, .desc { display: none !important; }
             .print-text { display: block !important; }
-            input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; font-size: 14px !important; }
-            .logo-container { position: absolute; top: 40px; right: 50px; display: block !important; }
-            tr { display: table-row !important; page-break-inside: avoid !important; }
-            td { display: table-cell !important; border: 1px solid #ddd !important; text-align: left !important; }
-            td:before { content: "" !important; }
+            input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
+            .logo-container { right: 1.5cm; top: 1.5cm; position: absolute; }
+            tr { page-break-inside: avoid !important; }
+            input::placeholder { color: transparent; }
             .totals { float: right !important; width: 300px; }
-            .footer-content { page-break-inside: avoid; }
+            .contact-info-print { display: block !important; text-align: center; margin-top: 5px; font-size: 0.9em; }
         }
     </style>
 </head>
@@ -77,11 +73,14 @@
 <div id="login-trigger" class="no-print" onclick="promptLogin()">⚙️</div>
 
 <div id="admin-panel" class="no-print">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2>Arhiva</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Arhiva Ponuda</h1>
         <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
     </div>
-    <div id="admin-list"></div>
+    <table style="width:100%;">
+        <thead><tr><th>Datum (Spremanja)</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
+        <tbody id="admin-list"></tbody>
+    </table>
 </div>
 
 <div class="container">
@@ -99,7 +98,7 @@
         </p>
         <div style="display: flex; align-items: center; gap: 5px; font-size: 0.9em;">
             <strong>Datum ponude:</strong>
-            <input type="text" id="manualDate" style="border: none; border-bottom: 1px solid #eee; padding: 2px;" placeholder="Upiši datum">
+            <input type="text" id="manualDate" style="width: 150px; border: none; border-bottom: 1px solid #eee; padding: 2px;" placeholder="Upiši datum">
         </div>
     </div>
 
@@ -110,9 +109,9 @@
         <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina">
     </div>
 
-    <div style="text-align:center; margin-bottom:20px;">
-        <span style="font-size: 1.2em; font-weight: bold;">PONUDA br.</span>
-        <input type="text" id="offerNum" style="font-size:1.2em; font-weight:bold; width: 60px; border:none; border-bottom: 2px solid #eee; text-align: center;" value="1">
+    <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+        <span style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
+        <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
     <table>
@@ -139,34 +138,37 @@
             <div><span>PDV 17%:</span> <span id="vat">0,00 KM</span></div>
             <div class="grand-total"><span>ZA PLATITI:</span> <span id="total">0,00 KM</span></div>
         </div>
-        <div style="clear:both;"></div>
     </div>
 
     <div class="footer-content">
-        <div style="padding-top:20px">
+        <div style="padding-top:40px">
             <strong>Napomena:</strong>
             <div class="print-text" id="notes-print"></div>
             <textarea id="notes" rows="3" oninput="document.getElementById('notes-print').innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
 - Rok izvođenja po dogovoru.</textarea>
         </div>
 
-        <div style="margin-top: 40px; width: 200px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">
+        <div style="margin-top: 40px; width: 250px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">
             Potpis i pečat
         </div>
 
         <div class="thanks-msg">
             Hvala na povjerenju!
         </div>
+        
+        <div class="contact-info-print" style="text-align:center; font-size: 0.9em; color: #333; margin-top: 10px;">
+            Email: josippenava989@gmail.com | Tel: 063 247 233
+        </div>
     </div>
 </div>
 
-<div class="no-print" style="display: flex; gap: 10px; margin-top:20px; padding-bottom: 40px;">
-    <button class="btn btn-save" onclick="saveData()">💾 SPREMI</button>
-    <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ PRINT</button>
+<div class="no-print" style="text-align:center; margin-top:30px; padding-bottom: 50px; display: flex; justify-content: center; gap: 15px;">
+    <button class="btn btn-save" onclick="saveData()">💾 SPREMI U BAZU</button>
+    <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ U PDF</button>
 </div>
 
 <script>
-// --- FIREBASE KONFIGURACIJA (ZALIJEPI SVOJE PODATKE) ---
+// --- FIREBASE KONFIGURACIJA ---
 const firebaseConfig = {
   apiKey: "AIzaSyA5Ad3k0aNnXdtIelhB-Ygt926AiLkpXLw",
   authDomain: "ponude---penava.firebaseapp.com",
@@ -175,7 +177,6 @@ const firebaseConfig = {
   messagingSenderId: "879052196775",
   appId: "1:879052196775:web:fa6338707f326635ca8482"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -208,21 +209,23 @@ function calculate() {
 function addRow(d='', q=0, p=0) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td data-label="Rb" style="text-align:center"></td>
-        <td data-label="Opis">
+        <td style="text-align:center"></td>
+        <td>
             <div class="print-text"></div>
             <textarea class="desc" oninput="this.previousElementSibling.innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">${d}</textarea>
         </td>
-        <td data-label="m2"><input type="number" class="qty" value="${q}" oninput="calculate()"></td>
-        <td data-label="KM/m2"><input type="number" class="price" value="${p}" oninput="calculate()"></td>
-        <td data-label="Ukupno" class="row-t" style="text-align:right">0,00</td>
-        <td class="action-col no-print"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer; font-size:18px;">🗑️</button></td>
+        <td><input type="number" class="qty" value="${q}" oninput="calculate()"></td>
+        <td><input type="number" class="price" value="${p}" oninput="calculate()"></td>
+        <td class="row-t" style="text-align:right">0,00</td>
+        <td class="action-col no-print" style="text-align:center;"><button onclick="this.parentElement.parentElement.remove();calculate()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">X</button></td>
     `;
     document.getElementById('items-body').appendChild(tr);
+    
     const ta = tr.querySelector('textarea');
     tr.querySelector('.print-text').innerText = d;
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
+    
     calculate();
 }
 
@@ -240,9 +243,9 @@ async function saveData() {
         note: document.getElementById('notes').value,
         items: items,
         total: document.getElementById('total').innerText,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        date: new Date().toLocaleDateString('hr-HR')
     };
-    try { await db.collection("ponude").add(data); alert("Spremljeno!"); } catch (e) { alert("Greška!"); }
+    try { await db.collection("ponude").add(data); alert("Uspješno spremljeno u bazu!"); } catch (e) { alert("Greška: " + e); }
 }
 
 function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
@@ -251,15 +254,16 @@ async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
     const list = document.getElementById('admin-list');
     list.innerHTML = "Učitavam...";
-    const snap = await db.collection("ponude").orderBy("createdAt", "desc").get();
-    list.innerHTML = "";
-    snap.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement('div');
-        div.style = "padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;";
-        div.innerHTML = `<span>Br. ${d.num} - ${d.name}</span><button class="btn" style="background:#008CBA; padding:5px 10px;" onclick="loadOffer('${doc.id}')">Učitaj</button>`;
-        list.appendChild(div);
-    });
+    try {
+        const snap = await db.collection("ponude").get();
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button></td>`;
+            list.appendChild(tr);
+        });
+    } catch(e) { list.innerHTML = "Greška pri učitavanju."; }
 }
 
 async function loadOffer(id) {
