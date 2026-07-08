@@ -43,8 +43,11 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        #mobile-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        #mobile-modal, #login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+        #login-modal .modal-content { max-width: 380px; }
+        #login-error { color: #f44336; font-size: 0.9em; margin-top: 10px; min-height: 18px; }
+        #auth-status { position: fixed; bottom: 20px; left: 20px; font-size: 12px; color: #888; z-index: 1001; }
         .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
 
@@ -72,12 +75,16 @@
 </head>
 <body>
 
-<div id="login-trigger" class="no-print" onclick="promptLogin()">⚙️</div>
+<div id="login-trigger" class="no-print" onclick="requireAdmin()">⚙️</div>
+<div id="auth-status" class="no-print"></div>
 
 <div id="admin-panel" class="no-print">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
         <h1>Arhiva Ponuda</h1>
-        <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="background:#f44336;" onclick="logout()">Odjava</button>
+            <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
+        </div>
     </div>
     <table style="width:100%; margin-top: 20px;">
         <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
@@ -97,6 +104,21 @@
         <div class="modal-actions">
             <button class="btn btn-add" style="flex:1;" onclick="saveModalChanges()">POTVRDI</button>
             <button class="btn" style="flex:1; background:#666;" onclick="document.getElementById('mobile-modal').style.display='none'">ODUSTANI</button>
+        </div>
+    </div>
+</div>
+
+<div id="login-modal" class="no-print">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color:#1565c0;">Prijava</h3>
+        <label style="display:block; font-weight:bold; margin-bottom:5px;">Email:</label>
+        <input type="email" id="login-email" autocomplete="username" style="font-size:16px;">
+        <label style="display:block; font-weight:bold; margin-bottom:5px; margin-top:10px;">Lozinka:</label>
+        <input type="password" id="login-password" autocomplete="current-password" style="font-size:16px;" onkeydown="if(event.key==='Enter')doLogin()">
+        <div id="login-error"></div>
+        <div class="modal-actions">
+            <button class="btn btn-add" style="flex:1;" onclick="doLogin()">PRIJAVI SE</button>
+            <button class="btn" style="flex:1; background:#666;" onclick="closeLogin()">ODUSTANI</button>
         </div>
     </div>
 </div>
@@ -189,8 +211,21 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 let currentRowRef = null;
+let pendingAction = null;
+
+// Prati stanje prijave i osvježava indikator dolje lijevo.
+// Firebase sam pamti prijavu na uređaju, pa ostaješ prijavljen i nakon zatvaranja stranice.
+auth.onAuthStateChanged(user => {
+    const status = document.getElementById('auth-status');
+    if (user) {
+        status.innerText = "Prijavljen: " + user.email;
+    } else {
+        status.innerText = "";
+    }
+});
 
 function format(n) { return n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -267,6 +302,7 @@ function saveModalChanges() {
 }
 
 async function saveData() {
+    if (!auth.currentUser) { openLogin(saveData); return; }
     try {
         const items = [];
         document.querySelectorAll('#items-body tr').forEach(r => {
@@ -304,7 +340,45 @@ async function deleteOffer(id) {
     }
 }
 
-function promptLogin() { if (prompt("Lozinka:") === "789xy1234") openAdmin(); }
+// Otvara admin arhivu; ako nisi prijavljen, prvo traži prijavu pa onda otvara arhivu.
+function requireAdmin() {
+    if (auth.currentUser) openAdmin();
+    else openLogin(openAdmin);
+}
+
+function openLogin(action) {
+    pendingAction = action || null;
+    document.getElementById('login-error').innerText = "";
+    document.getElementById('login-password').value = "";
+    document.getElementById('login-modal').style.display = 'flex';
+    document.getElementById('login-email').focus();
+}
+
+function closeLogin() {
+    document.getElementById('login-modal').style.display = 'none';
+    pendingAction = null;
+}
+
+async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-password').value;
+    const err = document.getElementById('login-error');
+    err.innerText = "";
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        document.getElementById('login-modal').style.display = 'none';
+        if (pendingAction) { const a = pendingAction; pendingAction = null; a(); }
+    } catch (e) {
+        if (e.code === 'auth/invalid-email') err.innerText = "Neispravan email.";
+        else if (e.code === 'auth/too-many-requests') err.innerText = "Previše pokušaja. Pokušaj kasnije.";
+        else err.innerText = "Pogrešan email ili lozinka.";
+    }
+}
+
+function logout() {
+    auth.signOut();
+    closeAdmin();
+}
 
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
