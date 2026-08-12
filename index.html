@@ -175,7 +175,6 @@
     <div class="totals-wrapper">
         <div class="totals">
             <div><span>Ukupno:</span> <span id="sub">0,00 KM</span></div>
-            <div><span>PDV 17%:</span> <span id="vat">0,00 KM</span></div>
             <div class="grand-total"><span>ZA PLATITI:</span> <span id="total">0,00 KM</span></div>
         </div>
     </div>
@@ -187,7 +186,16 @@
             <textarea id="notes" rows="3" oninput="document.getElementById('notes-print').innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
 - Rok izvođenja po dogovoru.</textarea>
         </div>
-        <div style="margin-top: 40px; width: 250px; text-align:center; border-top: 1px solid #000; padding-top: 5px;">Potpis i pečat</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 60px; gap: 40px;">
+            <div style="width: 250px; text-align:center;">
+                <div style="border-top: 1px solid #000; padding-top: 5px;">Ponudu izdao</div>
+                <div style="font-size: 0.85em; color: #333;">(potpis i pečat)</div>
+            </div>
+            <div style="width: 250px; text-align:center;">
+                <div style="border-top: 1px solid #000; padding-top: 5px;">Ponudu preuzeo</div>
+                <div style="font-size: 0.85em; color: #333;">(potpis i pečat)</div>
+            </div>
+        </div>
         <div class="thanks-msg">Hvala na povjerenju!</div>
         <div class="contact-info-print" style="text-align:center; font-size: 0.9em; color: #333; margin-top: 10px;">Email: josippenava989@gmail.com | Tel: 063 247 233</div>
     </div>
@@ -247,10 +255,8 @@ function calculate() {
         r.querySelector('.row-t').innerText = format(t);
         s += t;
     });
-    let v = s * 0.17;
     document.getElementById('sub').innerText = format(s) + " KM";
-    document.getElementById('vat').innerText = format(v) + " KM";
-    document.getElementById('total').innerText = format(s + v) + " KM";
+    document.getElementById('total').innerText = format(s) + " KM";
 }
 
 function addRow(d='', q=0, p=0) {
