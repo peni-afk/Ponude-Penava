@@ -151,7 +151,7 @@
 
     <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
         <span style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
-        <input type="text" id="offerNum" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
+        <input type="text" id="offerNum" oninput="numManuallyEdited=true" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
     <table>
@@ -159,9 +159,9 @@
             <tr>
                 <th style="width:30px">Rb</th>
                 <th>Opis radova</th>
-                <th style="width:80px">m2</th>
-                <th style="width:100px">KM/m2</th>
-                <th style="width:120px">Ukupno</th>
+                <th style="width:60px">m2</th>
+                <th style="width:75px">KM/m2</th>
+                <th style="width:95px">Ukupno</th>
                 <th class="action-col no-print" style="width:40px"></th>
             </tr>
         </thead>
@@ -223,6 +223,27 @@ const auth = firebase.auth();
 
 let currentRowRef = null;
 let pendingAction = null;
+let numManuallyEdited = false;
+
+// Vraća sljedeći slobodan broj ponude (najveći u bazi + 1). Broji i stornirane/obrisane da se brojevi ne ponavljaju.
+async function fetchNextOfferNum() {
+    const snap = await db.collection("ponude").get();
+    let max = 0;
+    snap.forEach(doc => {
+        const n = parseInt(doc.data().num, 10);
+        if (!isNaN(n) && n > max) max = n;
+    });
+    return max + 1;
+}
+
+// Ako korisnik nije sam mijenjao broj, upiši sljedeći automatski.
+async function autoFillOfferNum() {
+    if (numManuallyEdited) return;
+    try {
+        const next = await fetchNextOfferNum();
+        if (!numManuallyEdited) document.getElementById('offerNum').value = next;
+    } catch (e) { /* nije prijavljen ili nema mreže — polje ostaje kakvo jest */ }
+}
 
 // Prati stanje prijave i osvježava indikator dolje lijevo.
 // Firebase sam pamti prijavu na uređaju, pa ostaješ prijavljen i nakon zatvaranja stranice.
@@ -230,6 +251,7 @@ auth.onAuthStateChanged(user => {
     const status = document.getElementById('auth-status');
     if (user) {
         status.innerText = "Prijavljen: " + user.email;
+        autoFillOfferNum();
     } else {
         status.innerText = "";
     }
@@ -310,6 +332,10 @@ function saveModalChanges() {
 async function saveData() {
     if (!auth.currentUser) { openLogin(saveData); return; }
     try {
+        // Neposredno prije spremanja provjeri najveći broj u bazi da ne dođe do duplog broja
+        if (!numManuallyEdited) {
+            document.getElementById('offerNum').value = await fetchNextOfferNum();
+        }
         const items = [];
         document.querySelectorAll('#items-body tr').forEach(r => {
             items.push({ 
@@ -410,7 +436,8 @@ async function loadOffer(id) {
     document.getElementById('cName').value = d.name; 
     document.getElementById('cAddr').value = d.addr; 
     document.getElementById('cCity').value = d.city;
-    document.getElementById('offerNum').value = d.num; 
+    document.getElementById('offerNum').value = d.num;
+    numManuallyEdited = true; // učitana ponuda zadržava svoj originalni broj
     document.getElementById('manualDate').value = d.manualDate || "";
     document.getElementById('notes').value = d.note; 
     document.getElementById('items-body').innerHTML = "";
