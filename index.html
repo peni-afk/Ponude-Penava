@@ -50,6 +50,7 @@
         #auth-status { position: fixed; bottom: 20px; left: 20px; font-size: 12px; color: #888; z-index: 1001; }
         .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+        .ts-label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; color: #555; }
 
         @media screen and (max-width: 600px) {
             .container { padding: 20px; min-height: auto; width: 850px; transform: scale(0.45); transform-origin: top left; margin-bottom: -500px; }
@@ -123,6 +124,14 @@
     </div>
 </div>
 
+<div class="no-print" style="max-width: 850px; margin: 0 auto 15px auto; display: flex; gap: 10px; justify-content: center;">
+    <button id="btn-ponuda" class="btn" style="flex:1; max-width:200px; background:#1565c0;" onclick="setDocType('ponuda')">PONUDA</button>
+    <button id="btn-racun" class="btn" style="flex:1; max-width:200px; background:#b0bec5;" onclick="setDocType('racun')">RAČUN</button>
+    <button id="btn-satnice" class="btn" style="flex:1; max-width:200px; background:#b0bec5;" onclick="openSatnice()">SATNICE</button>
+</div>
+
+<div id="mic-btn" class="no-print" title="Glasovni unos (klikni pa govori)" onclick="toggleMic()" style="position: fixed; bottom: 60px; right: 20px; font-size: 24px; cursor: pointer; z-index: 1001; background:#fff; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25);">🎤</div>
+
 <div class="container">
     <div class="logo-container">
         <img src="logo.png" alt="Logo" onerror="this.style.display='none';">
@@ -150,7 +159,7 @@
     </div>
 
     <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-        <span style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
+        <span id="docTitle" style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
         <input type="text" id="offerNum" oninput="numManuallyEdited=true" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
 
@@ -188,11 +197,11 @@
         </div>
         <div style="display: flex; justify-content: space-between; margin-top: 60px; gap: 40px;">
             <div style="width: 250px; text-align:center;">
-                <div style="border-top: 1px solid #000; padding-top: 5px;">Ponudu izdao</div>
+                <div id="sigIssued" style="border-top: 1px solid #000; padding-top: 5px;">Ponudu izdao</div>
                 <div style="font-size: 0.85em; color: #333;">(potpis i pečat)</div>
             </div>
             <div style="width: 250px; text-align:center;">
-                <div style="border-top: 1px solid #000; padding-top: 5px;">Ponudu preuzeo</div>
+                <div id="sigReceived" style="border-top: 1px solid #000; padding-top: 5px;">Ponudu preuzeo</div>
                 <div style="font-size: 0.85em; color: #333;">(potpis i pečat)</div>
             </div>
         </div>
@@ -201,9 +210,43 @@
     </div>
 </div>
 
-<div class="no-print" style="text-align:center; margin-top:30px; padding-bottom: 50px; display: flex; justify-content: center; gap: 15px;">
+<div class="no-print" id="doc-actions" style="text-align:center; margin-top:30px; padding-bottom: 50px; display: flex; justify-content: center; gap: 15px;">
     <button class="btn btn-save" onclick="saveData()">💾 SPREMI U BAZU</button>
     <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ u PDF</button>
+</div>
+
+<div id="satnice-panel" class="no-print" style="display:none; max-width: 1000px; margin: 0 auto 50px auto; background:#fff; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 4px;">
+    <h2 style="color:#1565c0; margin-top:0;">Satnice i evidencija rada</h2>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; background:#f8f9fa; padding:15px; border-radius:8px;">
+        <div style="flex:1; min-width:140px;"><label class="ts-label">Datum:</label><input type="date" id="tsDate"></div>
+        <div style="flex:1; min-width:150px;"><label class="ts-label">Zaposlenik:</label><select id="tsEmp" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select></div>
+        <div style="flex:2; min-width:150px;"><label class="ts-label">Projekt / gradilište:</label><input type="text" id="tsProj" placeholder="npr. Kuća Marić"></div>
+        <div style="width:80px;"><label class="ts-label">Sati:</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
+        <div style="width:80px; text-align:center;"><label class="ts-label">Dnevnica</label><input type="checkbox" id="tsDnevnica" style="width:22px; height:22px;"></div>
+        <div style="flex:2; min-width:150px;"><label class="ts-label">Napomena:</label><input type="text" id="tsNote"></div>
+        <button class="btn btn-add" style="margin-bottom:5px;" onclick="addEntry()">DODAJ</button>
+    </div>
+
+    <div style="display:flex; gap:15px; margin-top:15px; align-items:flex-end; flex-wrap:wrap;">
+        <div><label class="ts-label">Mjesec:</label><input type="month" id="tsMonth" onchange="renderSatnice()" style="width:auto;"></div>
+        <div><label class="ts-label">Filter:</label><select id="tsFilterEmp" onchange="renderSatnice()" style="padding:8px; border:1px solid #ddd; border-radius:4px;"></select></div>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <input type="text" id="newEmpName" placeholder="Ime novog zaposlenika" style="margin-bottom:0; width:200px;">
+            <button class="btn" style="background:#1565c0;" onclick="addEmployee()">+ Zaposlenik</button>
+        </div>
+    </div>
+
+    <h3 style="color:#1565c0;">Unosi</h3>
+    <div style="max-height:350px; overflow-y:auto;">
+        <table><thead><tr><th>Datum</th><th>Zaposlenik</th><th>Projekt</th><th>Sati</th><th>Dnevnica</th><th>Napomena</th><th style="width:40px;"></th></tr></thead><tbody id="tsBody"></tbody></table>
+    </div>
+
+    <h3 style="color:#1565c0;">Statistika po zaposleniku — odabrani mjesec</h3>
+    <table><thead><tr><th>Zaposlenik</th><th>Ukupno sati</th><th>Radnih dana</th><th>Dnevnice</th><th>Plaća isplaćena</th></tr></thead><tbody id="tsStatsEmp"></tbody></table>
+
+    <h3 style="color:#1565c0;">Statistika po projektu — odabrani mjesec</h3>
+    <table><thead><tr><th>Projekt</th><th>Ukupno sati</th><th>Udio</th></tr></thead><tbody id="tsStatsProj"></tbody></table>
 </div>
 
 <script>
@@ -224,13 +267,35 @@ const auth = firebase.auth();
 let currentRowRef = null;
 let pendingAction = null;
 let numManuallyEdited = false;
+let docType = 'ponuda';
 
-// Vraća sljedeći slobodan broj ponude (najveći u bazi + 1). Broji i stornirane/obrisane da se brojevi ne ponavljaju.
+// Prebacivanje između Ponude i Računa. Mijenja naslov, potpisna polja i povlači
+// sljedeći broj IZ ZASEBNOG NIZA za taj tip (ponude i računi se broje odvojeno).
+function setDocType(t) {
+    docType = t;
+    const isRacun = (t === 'racun');
+    document.getElementById('docTitle').innerText = isRacun ? 'RAČUN br.' : 'PONUDA br.';
+    document.getElementById('sigIssued').innerText = isRacun ? 'Račun izdao' : 'Ponudu izdao';
+    document.getElementById('sigReceived').innerText = isRacun ? 'Račun preuzeo' : 'Ponudu preuzeo';
+    document.getElementById('btn-ponuda').style.background = isRacun ? '#b0bec5' : '#1565c0';
+    document.getElementById('btn-racun').style.background = isRacun ? '#1565c0' : '#b0bec5';
+    document.getElementById('btn-satnice').style.background = '#b0bec5';
+    document.getElementById('satnice-panel').style.display = 'none';
+    document.querySelector('.container').style.display = 'flex';
+    document.getElementById('doc-actions').style.display = 'flex';
+    numManuallyEdited = false;
+    autoFillOfferNum();
+}
+
+// Vraća sljedeći slobodan broj ZA TRENUTNI TIP dokumenta (najveći + 1).
+// Stari zapisi bez tipa računaju se kao ponude. Broji i obrisane da se brojevi ne ponavljaju.
 async function fetchNextOfferNum() {
     const snap = await db.collection("ponude").get();
     let max = 0;
     snap.forEach(doc => {
-        const n = parseInt(doc.data().num, 10);
+        const d = doc.data();
+        if ((d.type || 'ponuda') !== docType) return;
+        const n = parseInt(d.num, 10);
         if (!isNaN(n) && n > max) max = n;
     });
     return max + 1;
@@ -353,6 +418,7 @@ async function saveData() {
             manualDate: document.getElementById('manualDate').value, 
             note: document.getElementById('notes').value,
             items: items, 
+            type: docType,
             total: document.getElementById('total').innerText, 
             date: new Date().toLocaleDateString('hr-HR'), 
             isDeleted: false
@@ -422,7 +488,9 @@ async function openAdmin() {
         snap.forEach(doc => {
             const d = doc.data();
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${d.date}</td><td>${d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button> <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button></td>`;
+            const isRacun = (d.type === 'racun');
+            const convertBtn = isRacun ? '' : ` <button class="btn" style="padding:5px; background:#2e7d32;" onclick="convertToRacun('${doc.id}')">→ Račun</button>`;
+            tr.innerHTML = `<td>${d.date}</td><td>${(isRacun ? 'Račun ' : 'Ponuda ') + d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button>${convertBtn} <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button></td>`;
             list.appendChild(tr);
         });
     } catch (e) {
@@ -433,6 +501,7 @@ async function openAdmin() {
 async function loadOffer(id) {
     const doc = await db.collection("ponude").doc(id).get(); 
     const d = doc.data();
+    setDocType(d.type || 'ponuda');
     document.getElementById('cName').value = d.name; 
     document.getElementById('cAddr').value = d.addr; 
     document.getElementById('cCity').value = d.city;
@@ -446,7 +515,189 @@ async function loadOffer(id) {
     closeAdmin();
 }
 
+// Pretvara ponudu u račun: kopira naručitelja, stavke i napomenu,
+// prebacuje u mod Račun i povlači sljedeći broj računa. Datum se prazni
+// jer račun nosi svoj datum. Originalna ponuda ostaje u arhivi netaknuta;
+// spremanjem nastaje NOVI zapis (račun).
+async function convertToRacun(id) {
+    const doc = await db.collection("ponude").doc(id).get();
+    const d = doc.data();
+    document.getElementById('cName').value = d.name;
+    document.getElementById('cAddr').value = d.addr;
+    document.getElementById('cCity').value = d.city;
+    document.getElementById('manualDate').value = "";
+    document.getElementById('notes').value = d.note;
+    document.getElementById('items-body').innerHTML = "";
+    d.items.forEach(i => addRow(i.d, i.q, i.p));
+    setDocType('racun'); // postavlja naslov/potpise i sam povlači sljedeći broj računa
+    syncPrintText();
+    closeAdmin();
+}
+
 function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
+
+// ===================== GLASOVNI UNOS =====================
+// Klik na 🎤 pa govori — tekst ulazi u zadnje odabrano tekstualno polje.
+// Radi u Chrome/Edge i na Androidu (Web Speech API), jezik hrvatski.
+let lastTextField = null;
+let recog = null;
+let listening = false;
+
+document.addEventListener('focusin', e => {
+    const t = e.target;
+    if (t.closest && t.closest('#login-modal')) return; // lozinka se ne diktira
+    if (t.matches && t.matches('input[type="text"], textarea')) lastTextField = t;
+});
+
+function toggleMic() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert("Glasovni unos nije podržan u ovom pregledniku.\nKoristi Chrome ili Edge."); return; }
+    if (listening) { recog.stop(); return; }
+    if (!lastTextField) { alert("Prvo klikni u polje u koje želiš diktirati, pa onda 🎤."); return; }
+    recog = new SR();
+    recog.lang = 'hr-HR';
+    recog.interimResults = false;
+    recog.onresult = e => {
+        const txt = e.results[e.results.length - 1][0].transcript.trim();
+        insertDictated(txt);
+    };
+    recog.onend = () => {
+        listening = false;
+        document.getElementById('mic-btn').style.background = '#fff';
+    };
+    recog.onerror = ev => {
+        if (ev.error === 'not-allowed') alert("Pristup mikrofonu je blokiran. Dozvoli mikrofon u pregledniku.");
+    };
+    recog.start();
+    listening = true;
+    document.getElementById('mic-btn').style.background = '#ffcdd2';
+}
+
+function insertDictated(txt) {
+    const f = lastTextField;
+    if (!f) return;
+    const sep = (f.value && !f.value.endsWith(' ')) ? ' ' : '';
+    f.value += sep + txt;
+    f.dispatchEvent(new Event('input', { bubbles: true })); // okida postojeće oninput logike
+}
+
+// ===================== SATNICE =====================
+// Podaci: zaposlenici (imena), sati (dnevni unosi), isplate (samo oznaka DA/NE po
+// mjesecu — bez iznosa, namjerno, radi sigurnosti). Sve iza prijave.
+let employees = [];
+
+function openSatnice() {
+    if (!auth.currentUser) { openLogin(openSatnice); return; }
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('doc-actions').style.display = 'none';
+    document.getElementById('satnice-panel').style.display = 'block';
+    document.getElementById('btn-satnice').style.background = '#1565c0';
+    document.getElementById('btn-ponuda').style.background = '#b0bec5';
+    document.getElementById('btn-racun').style.background = '#b0bec5';
+    const today = new Date();
+    const iso = today.toISOString();
+    if (!document.getElementById('tsMonth').value) document.getElementById('tsMonth').value = iso.slice(0, 7);
+    if (!document.getElementById('tsDate').value) document.getElementById('tsDate').value = iso.slice(0, 10);
+    loadEmployees().then(renderSatnice);
+}
+
+async function loadEmployees() {
+    const snap = await db.collection('zaposlenici').orderBy('name').get();
+    employees = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+    const opts = employees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    document.getElementById('tsEmp').innerHTML = opts || '<option value="">— prvo dodaj zaposlenika —</option>';
+    document.getElementById('tsFilterEmp').innerHTML = '<option value="">Svi zaposlenici</option>' + opts;
+}
+
+async function addEmployee() {
+    const inp = document.getElementById('newEmpName');
+    const name = inp.value.trim();
+    if (!name) return;
+    if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { alert("Zaposlenik s tim imenom već postoji."); return; }
+    await db.collection('zaposlenici').add({ name });
+    inp.value = '';
+    await loadEmployees();
+    renderSatnice();
+}
+
+async function addEntry() {
+    const date = document.getElementById('tsDate').value;
+    const emp = document.getElementById('tsEmp').value;
+    const proj = document.getElementById('tsProj').value.trim();
+    const hours = parseFloat(document.getElementById('tsHours').value);
+    const dnevnica = document.getElementById('tsDnevnica').checked;
+    const note = document.getElementById('tsNote').value.trim();
+    if (!date || !emp) { alert("Datum i zaposlenik su obavezni."); return; }
+    if (isNaN(hours) || hours <= 0) { alert("Upiši broj sati."); return; }
+    try {
+        await db.collection('sati').add({ date, emp, proj, hours, dnevnica, note, created: Date.now() });
+        document.getElementById('tsNote').value = '';
+        document.getElementById('tsDnevnica').checked = false;
+        // mjesec prikaza prati datum unosa da se novi red odmah vidi
+        document.getElementById('tsMonth').value = date.slice(0, 7);
+        renderSatnice();
+    } catch (e) { alert("Greška pri spremanju unosa."); console.error(e); }
+}
+
+async function deleteEntry(id) {
+    if (!confirm("Obrisati ovaj unos?")) return;
+    await db.collection('sati').doc(id).delete();
+    renderSatnice();
+}
+
+async function renderSatnice() {
+    const m = document.getElementById('tsMonth').value;
+    const filterEmp = document.getElementById('tsFilterEmp').value;
+    if (!m) return;
+    const snap = await db.collection('sati').where('date', '>=', m + '-01').where('date', '<=', m + '-31').get();
+    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+
+    // --- tablica unosa (uz filter zaposlenika) ---
+    const shown = filterEmp ? rows.filter(r => r.emp === filterEmp) : rows;
+    document.getElementById('tsBody').innerHTML = shown.map(r =>
+        `<td>${r.date.split('-').reverse().join('.')}.</td><td>${r.emp}</td><td>${r.proj || '—'}</td><td>${r.hours}</td><td>${r.dnevnica ? '✓' : ''}</td><td>${r.note || ''}</td><td><button class="btn btn-delete" onclick="deleteEntry('${r.id}')">🗑️</button></td>`
+    ).map(h => `<tr>${h}</tr>`).join('') || '<tr><td colspan="7" style="text-align:center; color:#888;">Nema unosa za odabrani mjesec.</td></tr>';
+
+    // --- statistika po zaposleniku (cijeli mjesec, bez filtera) ---
+    const isplateSnap = await db.collection('isplate').where('month', '==', m).get();
+    const paid = new Set(isplateSnap.docs.map(d => d.data().emp));
+    const byEmp = {};
+    rows.forEach(r => {
+        if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set(), dnevnice: 0 };
+        byEmp[r.emp].hours += r.hours;
+        byEmp[r.emp].days.add(r.date);
+        if (r.dnevnica) byEmp[r.emp].dnevnice++;
+    });
+    document.getElementById('tsStatsEmp').innerHTML = Object.keys(byEmp).sort().map(emp => {
+        const s = byEmp[emp];
+        const isPaid = paid.has(emp);
+        return `<tr><td>${emp}</td><td><b>${s.hours}</b></td><td>${s.days.size}</td><td>${s.dnevnice}</td><td><button class="btn" style="padding:5px 12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp.replace(/'/g, "\\'")}')">${isPaid ? '✓ DA' : 'NE'}</button></td></tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Nema podataka.</td></tr>';
+
+    // --- statistika po projektu ---
+    const byProj = {};
+    let totalH = 0;
+    rows.forEach(r => {
+        const p = r.proj || '(bez projekta)';
+        byProj[p] = (byProj[p] || 0) + r.hours;
+        totalH += r.hours;
+    });
+    document.getElementById('tsStatsProj').innerHTML = Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p =>
+        `<tr><td>${p}</td><td><b>${byProj[p]}</b></td><td>${totalH ? Math.round(byProj[p] / totalH * 100) : 0}%</td></tr>`
+    ).join('') || '<tr><td colspan="3" style="text-align:center; color:#888;">Nema podataka.</td></tr>';
+}
+
+// Oznaka "plaća isplaćena" za zaposlenika u odabranom mjesecu — samo DA/NE, bez iznosa.
+async function togglePaid(emp) {
+    const m = document.getElementById('tsMonth').value;
+    const id = (m + '_' + emp).replace(/[\/\s]/g, '-');
+    const ref = db.collection('isplate').doc(id);
+    const doc = await ref.get();
+    if (doc.exists) await ref.delete();
+    else await ref.set({ emp, month: m, paid: true, ts: Date.now() });
+    renderSatnice();
+}
 
 window.onload = () => { 
     addRow("Zaštita i priprema zidova i plafona za molovanje (bez materijala)", 3900, 1); 
