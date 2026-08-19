@@ -62,13 +62,26 @@
         @page { size: auto; margin: 0mm; }
         @media print {
             body { padding: 0 !important; background: white !important; margin: 0 !important; overflow: visible !important; }
-            .container { box-shadow: none !important; padding: 1.5cm !important; width: 100% !important; min-height: 100vh !important; border-radius: 0 !important; display: block !important; transform: none !important; margin: 0 !important; }
+            .container { box-shadow: none !important; padding: 1.5cm !important; width: 100% !important; min-height: auto !important; border-radius: 0 !important; display: block !important; transform: none !important; margin: 0 !important; }
             .no-print, .btn, .action-col, #login-trigger, textarea, .desc, #mobile-modal { display: none !important; }
             .print-text { display: block !important; }
             th { background: #e3f2fd !important; -webkit-print-color-adjust: exact; }
             input { border: none !important; padding: 0 !important; background: transparent !important; margin: 0 !important; height: auto !important; }
             .logo-container { right: 1.5cm !important; top: 1.5cm !important; position: absolute !important; }
             tr { page-break-inside: avoid !important; }
+            .footer-content { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .totals-wrapper { page-break-inside: avoid !important; break-inside: avoid !important; }
+            /* Kompaktniji ispis — manji razmaci samo na papiru, ekran ostaje isti */
+            .header-info { margin-bottom: 12px !important; }
+            .client-box { margin-top: 0 !important; margin-bottom: 12px !important; }
+            .client-box input { margin-bottom: 2px !important; }
+            .doc-title-row { margin-bottom: 12px !important; }
+            table { margin: 8px 0 !important; }
+            th { padding: 8px !important; }
+            td { padding: 6px 8px !important; }
+            .note-block { padding-top: 15px !important; }
+            .sig-row { margin-top: 35px !important; }
+            .thanks-msg { margin-top: 20px !important; }
             .totals { float: right !important; width: 300px !important; }
             .contact-info-print { display: block !important; text-align: center !important; margin-top: 5px !important; font-size: 0.9em !important; }
         }
@@ -158,7 +171,7 @@
         <input type="text" id="cCity" placeholder="Grad i država" value="Ljubuški, Bosna i Hercegovina">
     </div>
 
-    <div style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+    <div class="doc-title-row" style="text-align:center; margin-bottom:30px; display: flex; align-items: center; justify-content: center; gap: 5px;">
         <span id="docTitle" style="font-size: 1.5em; font-weight: bold;">PONUDA br.</span>
         <input type="text" id="offerNum" oninput="numManuallyEdited=true" style="font-size:1.5em; font-weight:bold; width: 80px; border:none; border-bottom: 2px solid #eee; text-align: left;" value="1">
     </div>
@@ -189,13 +202,13 @@
     </div>
 
     <div class="footer-content">
-        <div style="padding-top:40px">
+        <div class="note-block" style="padding-top:40px">
             <strong>Napomena:</strong>
             <div class="print-text" id="notes-print"></div>
             <textarea id="notes" rows="3" oninput="document.getElementById('notes-print').innerText=this.value; this.style.height='';this.style.height=this.scrollHeight+'px'">- Materijal nije uključen u stavke.
 - Rok izvođenja po dogovoru.</textarea>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-top: 60px; gap: 40px;">
+        <div class="sig-row" style="display: flex; justify-content: space-between; margin-top: 60px; gap: 40px;">
             <div style="width: 250px; text-align:center;">
                 <div id="sigIssued" style="border-top: 1px solid #000; padding-top: 5px;">Ponudu izdao</div>
                 <div style="font-size: 0.85em; color: #333;">(potpis i pečat)</div>
