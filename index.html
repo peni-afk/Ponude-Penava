@@ -318,8 +318,29 @@
     </div>
 
     <div class="ts-card">
-        <div class="ts-h">Dnevnice</div>
+        <div class="ts-h">Priznate dnevnice — <span id="dnMonthLbl"></span></div>
         <div id="tsDnevnice"></div>
+    </div>
+
+    <div class="ts-card">
+        <div class="ts-h">Isplate</div>
+        <div class="ts-form" style="background:#f8f9fa; padding:14px; border-radius:8px; margin-bottom:14px;">
+            <div style="width:150px;"><label class="ts-label">Datum isplate</label><input type="date" id="payDate"></div>
+            <div style="width:170px;"><label class="ts-label">Zaposlenik</label><select id="payEmp"></select></div>
+            <div style="width:150px;"><label class="ts-label">Za mjesec</label><input type="month" id="payMonth"></div>
+            <div style="width:140px;"><label class="ts-label">Vrsta</label><select id="payType"><option value="placa">Plaća</option><option value="dnevnice">Dnevnice</option><option value="akontacija">Akontacija</option></select></div>
+            <div style="flex:1; min-width:160px;"><label class="ts-label">Napomena</label><input type="text" id="payNote" placeholder="neobavezno"></div>
+            <div style="width:130px;"><button class="btn btn-add" style="width:100%; margin:0;" onclick="addPayout()">EVIDENTIRAJ</button></div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+            <select id="payFilterEmp" onchange="renderPayouts()" style="width:auto; margin:0;"></select>
+            <label style="font-size:13px; color:#777; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                <input type="checkbox" id="payShowKos" onchange="renderPayouts()" style="width:16px; height:16px; margin:0;"> Koš
+            </label>
+        </div>
+        <div style="max-height:320px; overflow-y:auto;">
+            <table style="margin:0;"><thead><tr><th style="width:100px;">Isplaćeno</th><th>Zaposlenik</th><th style="width:100px;">Za mjesec</th><th style="width:100px;">Vrsta</th><th>Napomena</th><th style="width:50px;"></th></tr></thead><tbody id="payBody"></tbody></table>
+        </div>
     </div>
 
     <div class="ts-card">
@@ -796,6 +817,7 @@ async function addEmployee() {
     await db.collection('zaposlenici').add({ name, active: true });
     inp.value = '';
     await loadEmployees();
+    fillPayEmpSelects();
     renderSatnice();
 }
 
@@ -806,6 +828,7 @@ async function removeEmployee(id, name) {
     if (!confirm("Još jednom za potvrdu.\n\nSvi dosadašnji unosi sati ostaju sačuvani — miče se samo s popisa za nove unose.")) return;
     await db.collection('zaposlenici').doc(id).update({ active: false });
     await loadEmployees();
+    fillPayEmpSelects();
     renderSatnice();
 }
 
@@ -840,6 +863,11 @@ async function renderSatnice() {
     renderGrid();
     renderDnevnice();
     renderStats();
+    fillPayEmpSelects();
+    renderPayouts();
+    const iso = new Date().toISOString();
+    if (!document.getElementById('payDate').value) document.getElementById('payDate').value = iso.slice(0, 10);
+    if (!document.getElementById('payMonth').value) document.getElementById('payMonth').value = m;
 }
 
 function renderKpi() {
@@ -896,8 +924,10 @@ function renderGrid() {
             const t = rec && rec.note ? ` title="${rec.note}"` : '';
             sumCells += `<td class="${cls}"${t}><input class="h" type="text" inputmode="decimal" value="${v}" data-emp="${e.name}" data-date="${ds}" onchange="saveCell(this)" ondblclick="editNote(this)"></td>`;
         }
-        const monthSum = monthRows.filter(r => r.emp === e.name && (r.proj || '') === proj).reduce((s, r) => s + r.hours, 0);
-        rows += `<tr><td class="emp-c">${e.name}</td>${sumCells}<td class="sum">${Math.round(monthSum * 10) / 10}</td></tr>`;
+        const empRecs = monthRows.filter(r => r.emp === e.name && (r.proj || '') === proj);
+        const monthSum = empRecs.reduce((s, r) => s + r.hours, 0);
+        const monthDays = new Set(empRecs.map(r => r.date)).size;
+        rows += `<tr><td class="emp-c">${e.name}</td>${sumCells}<td class="sum">${Math.round(monthSum * 10) / 10} h<br><span style="font-size:11px; color:#888; font-weight:normal;">${monthDays} d</span></td></tr>`;
     });
 
     wrap.innerHTML = `<table class="gr"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
@@ -945,13 +975,15 @@ async function refreshMonth() {
     renderKpi(); renderGrid(); renderDnevnice(); renderStats();
 }
 
-// Dnevnice: aplikacija predloži broj dana na terenu, ali broj je uredljiv,
-// jer se dnevnica ne priznaje automatski za svaki radni dan.
+// Priznate dnevnice: aplikacija predloži broj dana na terenu, ali broj je uredljiv,
+// jer se dnevnica ne priznaje automatski za svaki radni dan. Ovdje se SAMO priznaje;
+// je li i kada isplaćeno vodi se odvojeno, u evidenciji isplata ispod.
 async function renderDnevnice() {
     const m = document.getElementById('tsMonth').value;
+    document.getElementById('dnMonthLbl').innerText = mjesecNaziv(m);
     const snap = await db.collection('dnevnice').where('month', '==', m).get();
     const saved = {};
-    snap.docs.forEach(d => { saved[d.data().emp] = { count: d.data().count, paid: d.data().paid, id: d.id }; });
+    snap.docs.forEach(d => { saved[d.data().emp] = d.data().count; });
 
     const byEmp = {};
     monthRows.forEach(r => {
@@ -963,37 +995,86 @@ async function renderDnevnice() {
 
     document.getElementById('tsDnevnice').innerHTML = keys.map(emp => {
         const dana = byEmp[emp].size;
-        const s = saved[emp];
-        const val = s && s.count !== undefined ? s.count : dana;
-        const paid = s ? s.paid : false;
+        const val = saved[emp] !== undefined ? saved[emp] : dana;
         return `<div class="st-row">
             <div class="st-name">${emp}</div>
-            <div class="st-meta">${dana} dana na terenu</div>
+            <div class="st-meta">radio ${dana} dana</div>
+            <div class="st-meta">priznato dnevnica:</div>
             <input type="number" min="0" value="${val}" style="width:60px; text-align:center; margin:0; padding:5px;" onchange="saveDnevnica('${emp}', this.value)">
-            <span class="st-meta">priznato</span>
-            <button class="btn" style="padding:4px 12px; font-size:12px; background:${paid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${paid ? '✓ isplaćeno' : 'nije isplaćeno'}</button>
         </div>`;
     }).join('');
+}
+
+function mjesecNaziv(m) {
+    const n = ['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
+    if (!m) return '';
+    const [y, mo] = m.split('-').map(Number);
+    return n[mo - 1] + ' ' + y;
 }
 
 function dnevnicaId(m, emp) { return (m + '_' + emp).replace(/[^\wČĆŽŠĐčćžšđ-]/g, '-'); }
 
 async function saveDnevnica(emp, count) {
     const m = document.getElementById('tsMonth').value;
-    const ref = db.collection('dnevnice').doc(dnevnicaId(m, emp));
-    const doc = await ref.get();
-    await ref.set({ emp, month: m, count: parseInt(count, 10) || 0, paid: doc.exists ? !!doc.data().paid : false }, { merge: true });
-    renderDnevnice();
+    await db.collection('dnevnice').doc(dnevnicaId(m, emp)).set(
+        { emp, month: m, count: parseInt(count, 10) || 0 }, { merge: true });
 }
 
-async function togglePaid(emp) {
-    const m = document.getElementById('tsMonth').value;
-    const ref = db.collection('dnevnice').doc(dnevnicaId(m, emp));
-    const doc = await ref.get();
-    const cur = doc.exists ? !!doc.data().paid : false;
-    const cnt = doc.exists && doc.data().count !== undefined ? doc.data().count : 0;
-    await ref.set({ emp, month: m, count: cnt, paid: !cur }, { merge: true });
-    renderDnevnice();
+// ---------- Evidencija isplata ----------
+// Svaka isplata je zaseban zapis s datumom, pa se vidi cijela povijest po ljudima.
+function fillPayEmpSelects() {
+    const opts = employees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    document.getElementById('payEmp').innerHTML = opts || '<option value="">— dodaj zaposlenika —</option>';
+    const f = document.getElementById('payFilterEmp');
+    const cur = f.value;
+    f.innerHTML = '<option value="">Svi zaposlenici</option>' + opts;
+    if (cur) f.value = cur;
+}
+
+async function addPayout() {
+    const date = document.getElementById('payDate').value;
+    const emp = document.getElementById('payEmp').value;
+    const month = document.getElementById('payMonth').value;
+    const type = document.getElementById('payType').value;
+    const note = document.getElementById('payNote').value.trim();
+    if (!date || !emp || !month) { alert("Datum isplate, zaposlenik i mjesec su obavezni."); return; }
+    try {
+        await db.collection('isplate').add({ date, emp, month, type, note, isDeleted: false, created: Date.now() });
+        document.getElementById('payNote').value = '';
+        renderPayouts();
+    } catch (e) { alert("Greška pri spremanju isplate."); }
+}
+
+async function deletePayout(id, opis) {
+    if (!confirm("Premjestiti isplatu u koš?\n" + opis)) return;
+    if (!confirm("Još jednom za potvrdu.\n\nZapis ostaje sačuvan i možeš ga vratiti kvačicom „Koš\".")) return;
+    await db.collection('isplate').doc(id).update({ isDeleted: true, deletedAt: Date.now() });
+    renderPayouts();
+}
+
+async function restorePayout(id) {
+    await db.collection('isplate').doc(id).update({ isDeleted: false });
+    renderPayouts();
+}
+
+async function renderPayouts() {
+    const filterEmp = document.getElementById('payFilterEmp').value;
+    const showKos = document.getElementById('payShowKos').checked;
+    const snap = await db.collection('isplate').get();
+    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.date); // stari zapisi bez datuma se preskaču
+    rows = rows.filter(r => (!!r.isDeleted) === showKos);
+    if (filterEmp) rows = rows.filter(r => r.emp === filterEmp);
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+
+    const naziv = { placa: 'Plaća', dnevnice: 'Dnevnice', akontacija: 'Akontacija' };
+    document.getElementById('payBody').innerHTML = rows.map(r => {
+        const dat = r.date.split('-').reverse().join('.') + '.';
+        const btn = showKos
+            ? `<button class="btn" style="padding:4px 10px; background:#2e7d32; font-size:12px;" onclick="restorePayout('${r.id}')">↩</button>`
+            : `<button class="btn btn-delete" onclick="deletePayout('${r.id}','${dat} ${r.emp}')">🗑️</button>`;
+        const boja = r.type === 'dnevnice' ? '#f39c12' : (r.type === 'akontacija' ? '#8e44ad' : '#2e7d32');
+        return `<tr><td>${dat}</td><td><b>${r.emp}</b></td><td>${mjesecNaziv(r.month)}</td><td><span style="background:${boja}; color:#fff; padding:2px 8px; border-radius:10px; font-size:11.5px;">${naziv[r.type] || r.type}</span></td><td style="color:#777;">${r.note || ''}</td><td>${btn}</td></tr>`;
+    }).join('') || `<tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">${showKos ? 'Koš je prazan.' : 'Još nema evidentiranih isplata.'}</td></tr>`;
 }
 
 function renderStats() {
@@ -1012,9 +1093,11 @@ function renderStats() {
 
     let html = empKeys.map(emp => {
         const s = byEmp[emp];
+        const dana = s.days.size;
+        const prosj = dana ? Math.round(s.hours / dana * 10) / 10 : 0;
         return `<div class="st-row">
             <div class="st-name">${emp}</div>
-            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; ${s.days.size} dana</div>
+            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; <b>${dana}</b> radnih dana &nbsp;·&nbsp; prosjek ${prosj} h/dan</div>
         </div>`;
     }).join('');
 
