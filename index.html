@@ -51,6 +51,17 @@
         .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
         .ts-label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; color: #555; }
+        .ts-card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-bottom:15px; }
+        .ts-h { font-weight:600; color:#1565c0; margin-bottom:12px; font-size:15px; }
+        .ts-card table th { padding:8px; font-size:12px; }
+        .ts-card table td { padding:7px 8px; font-size:13px; }
+        .kpi { background:#fff; border-radius:10px; padding:15px 18px; box-shadow:0 2px 10px rgba(0,0,0,0.06); border-left:4px solid #1565c0; }
+        .kpi-v { font-size:24px; font-weight:600; color:#1565c0; line-height:1.2; }
+        .kpi-l { font-size:12px; color:#777; margin-top:2px; }
+        .chip { background:#e3f2fd; color:#1565c0; padding:5px 10px; border-radius:14px; font-size:13px; display:flex; align-items:center; gap:6px; }
+        .chip span { cursor:pointer; color:#f44336; font-weight:bold; }
+        .bar { background:#eceff1; border-radius:8px; height:16px; overflow:hidden; }
+        .bar div { background:#1565c0; height:100%; }
 
         @media screen and (max-width: 600px) {
             .container { padding: 20px; min-height: auto; width: 850px; transform: scale(0.45); transform-origin: top left; margin-bottom: -500px; }
@@ -94,14 +105,24 @@
 
 <div id="admin-panel" class="no-print">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-        <h1>Arhiva Ponuda</h1>
+        <h1 id="admin-title">Arhiva</h1>
         <div style="display:flex; gap:10px;">
             <button class="btn" style="background:#f44336;" onclick="logout()">Odjava</button>
             <button class="btn" style="background:#666;" onclick="closeAdmin()">Zatvori X</button>
         </div>
     </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:15px;">
+        <div style="display:flex; gap:2px;">
+            <button class="btn" id="at-sve" style="background:#1565c0;" onclick="setArchView('sve')">Sve</button>
+            <button class="btn" id="at-ponuda" style="background:#b0bec5;" onclick="setArchView('ponuda')">Ponude</button>
+            <button class="btn" id="at-racun" style="background:#b0bec5;" onclick="setArchView('racun')">Računi</button>
+            <button class="btn" id="at-kos" style="background:#b0bec5;" onclick="setArchView('kos')">Koš</button>
+        </div>
+        <input type="text" id="archSearch" placeholder="Pretraži po naručitelju ili broju..." oninput="openAdmin()" style="flex:1; min-width:200px; margin-bottom:0;">
+    </div>
+    <p id="kos-info" style="display:none; background:#fff8e1; border-left:4px solid #f39c12; padding:10px 15px; font-size:13px; margin-top:15px;">Ovdje su obrisani dokumenti. Ništa se ne briše trajno — sve se može vratiti gumbom "Vrati".</p>
     <table style="width:100%; margin-top: 20px;">
-        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th>Akcija</th></tr></thead>
+        <thead><tr><th>Datum</th><th>Br.</th><th>Naručitelj</th><th>Iznos</th><th style="width:260px;">Akcija</th></tr></thead>
         <tbody id="admin-list"></tbody>
     </table>
 </div>
@@ -137,10 +158,10 @@
     </div>
 </div>
 
-<div class="no-print" style="max-width: 850px; margin: 0 auto 15px auto; display: flex; gap: 10px; justify-content: center;">
-    <button id="btn-ponuda" class="btn" style="flex:1; max-width:200px; background:#1565c0;" onclick="setDocType('ponuda')">PONUDA</button>
-    <button id="btn-racun" class="btn" style="flex:1; max-width:200px; background:#b0bec5;" onclick="setDocType('racun')">RAČUN</button>
-    <button id="btn-satnice" class="btn" style="flex:1; max-width:200px; background:#b0bec5;" onclick="openSatnice()">SATNICE</button>
+<div class="no-print" style="max-width: 850px; margin: 0 auto 15px auto; display: flex; gap: 8px; justify-content: flex-start;">
+    <button id="btn-ponuda" class="btn" style="min-width:130px; background:#1565c0;" onclick="setDocType('ponuda')">PONUDA</button>
+    <button id="btn-racun" class="btn" style="min-width:130px; background:#b0bec5;" onclick="setDocType('racun')">RAČUN</button>
+    <button id="btn-satnice" class="btn" style="min-width:130px; background:#b0bec5;" onclick="openSatnice()">SATNICE</button>
 </div>
 
 <div id="mic-btn" class="no-print" title="Glasovni unos (klikni pa govori)" onclick="toggleMic()" style="position: fixed; bottom: 60px; right: 20px; font-size: 24px; cursor: pointer; z-index: 1001; background:#fff; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25);">🎤</div>
@@ -228,38 +249,74 @@
     <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ u PDF</button>
 </div>
 
-<div id="satnice-panel" class="no-print" style="display:none; max-width: 1000px; margin: 0 auto 50px auto; background:#fff; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 4px;">
-    <h2 style="color:#1565c0; margin-top:0;">Satnice i evidencija rada</h2>
+<div id="satnice-panel" class="no-print" style="display:none; max-width: 1000px; margin: 0 auto 50px auto;">
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; background:#f8f9fa; padding:15px; border-radius:8px;">
-        <div style="flex:1; min-width:140px;"><label class="ts-label">Datum:</label><input type="date" id="tsDate"></div>
-        <div style="flex:1; min-width:150px;"><label class="ts-label">Zaposlenik:</label><select id="tsEmp" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select></div>
-        <div style="flex:2; min-width:150px;"><label class="ts-label">Projekt / gradilište:</label><input type="text" id="tsProj" placeholder="npr. Kuća Marić"></div>
-        <div style="width:80px;"><label class="ts-label">Sati:</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
-        <div style="width:80px; text-align:center;"><label class="ts-label">Dnevnica</label><input type="checkbox" id="tsDnevnica" style="width:22px; height:22px;"></div>
-        <div style="flex:2; min-width:150px;"><label class="ts-label">Napomena:</label><input type="text" id="tsNote"></div>
-        <button class="btn btn-add" style="margin-bottom:5px;" onclick="addEntry()">DODAJ</button>
-    </div>
-
-    <div style="display:flex; gap:15px; margin-top:15px; align-items:flex-end; flex-wrap:wrap;">
-        <div><label class="ts-label">Mjesec:</label><input type="month" id="tsMonth" onchange="renderSatnice()" style="width:auto;"></div>
-        <div><label class="ts-label">Filter:</label><select id="tsFilterEmp" onchange="renderSatnice()" style="padding:8px; border:1px solid #ddd; border-radius:4px;"></select></div>
-        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <input type="text" id="newEmpName" placeholder="Ime novog zaposlenika" style="margin-bottom:0; width:200px;">
-            <button class="btn" style="background:#1565c0;" onclick="addEmployee()">+ Zaposlenik</button>
+    <div class="ts-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+            <div style="font-size:20px; font-weight:600; color:#1565c0;">Evidencija rada</div>
+            <div style="font-size:13px; color:#777;">Satnice, dnevnice i pregled po projektima</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn" style="background:#eceff1; color:#333; padding:8px 14px;" onclick="shiftMonth(-1)">‹</button>
+            <input type="month" id="tsMonth" onchange="renderSatnice()" style="width:auto; margin-bottom:0; font-weight:600; text-align:center;">
+            <button class="btn" style="background:#eceff1; color:#333; padding:8px 14px;" onclick="shiftMonth(1)">›</button>
         </div>
     </div>
 
-    <h3 style="color:#1565c0;">Unosi</h3>
-    <div style="max-height:350px; overflow-y:auto;">
-        <table><thead><tr><th>Datum</th><th>Zaposlenik</th><th>Projekt</th><th>Sati</th><th>Dnevnica</th><th>Napomena</th><th style="width:40px;"></th></tr></thead><tbody id="tsBody"></tbody></table>
+    <div id="tsKpi" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:15px;"></div>
+
+    <div class="ts-card">
+        <div class="ts-h">Novi unos</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(135px,1fr)); gap:12px; align-items:end;">
+            <div><label class="ts-label">Datum</label><input type="date" id="tsDate"></div>
+            <div><label class="ts-label">Zaposlenik</label><select id="tsEmp"></select></div>
+            <div style="grid-column:span 2;"><label class="ts-label">Projekt / gradilište</label><input type="text" id="tsProj" list="projList" placeholder="npr. Kuća Marić"><datalist id="projList"></datalist></div>
+            <div><label class="ts-label">Sati</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
+            <div>
+                <label class="ts-label">Dnevnica</label>
+                <label style="display:flex; align-items:center; gap:8px; height:37px; cursor:pointer; font-size:14px; color:#555;">
+                    <input type="checkbox" id="tsDnevnica" style="width:20px; height:20px; margin:0;"> da
+                </label>
+            </div>
+            <div style="grid-column:span 2;"><label class="ts-label">Napomena</label><input type="text" id="tsNote" placeholder="neobavezno"></div>
+            <div><button class="btn btn-add" style="width:100%; margin:0;" onclick="addEntry()">DODAJ</button></div>
+        </div>
     </div>
 
-    <h3 style="color:#1565c0;">Statistika po zaposleniku — odabrani mjesec</h3>
-    <table><thead><tr><th>Zaposlenik</th><th>Ukupno sati</th><th>Radnih dana</th><th>Dnevnice</th><th>Plaća isplaćena</th></tr></thead><tbody id="tsStatsEmp"></tbody></table>
+    <div class="ts-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div class="ts-h" style="margin:0;">Unosi</div>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <select id="tsFilterEmp" onchange="renderSatnice()" style="width:auto; margin:0;"></select>
+                <label style="font-size:13px; color:#777; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="tsShowKos" onchange="renderSatnice()" style="width:16px; height:16px; margin:0;"> Prikaži koš
+                </label>
+            </div>
+        </div>
+        <div style="max-height:340px; overflow-y:auto;">
+            <table style="margin:0;"><thead><tr><th>Datum</th><th>Zaposlenik</th><th>Projekt</th><th style="width:55px;">Sati</th><th style="width:55px;">Dnev.</th><th>Napomena</th><th style="width:55px;"></th></tr></thead><tbody id="tsBody"></tbody></table>
+        </div>
+    </div>
 
-    <h3 style="color:#1565c0;">Statistika po projektu — odabrani mjesec</h3>
-    <table><thead><tr><th>Projekt</th><th>Ukupno sati</th><th>Udio</th></tr></thead><tbody id="tsStatsProj"></tbody></table>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(330px,1fr)); gap:15px;">
+        <div class="ts-card" style="margin:0;">
+            <div class="ts-h">Po zaposleniku</div>
+            <table style="margin:0;"><thead><tr><th>Zaposlenik</th><th style="width:50px;">Sati</th><th style="width:50px;">Dana</th><th style="width:50px;">Dnev.</th><th style="width:70px;">Plaća</th></tr></thead><tbody id="tsStatsEmp"></tbody></table>
+        </div>
+        <div class="ts-card" style="margin:0;">
+            <div class="ts-h">Po projektu</div>
+            <table style="margin:0;"><thead><tr><th>Projekt</th><th style="width:55px;">Sati</th><th style="width:130px;">Udio</th></tr></thead><tbody id="tsStatsProj"></tbody></table>
+        </div>
+    </div>
+
+    <div class="ts-card" style="margin-top:15px;">
+        <div class="ts-h">Zaposlenici</div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="newEmpName" placeholder="Ime i prezime" style="width:220px; margin:0;" onkeydown="if(event.key==='Enter')addEmployee()">
+            <button class="btn" style="background:#1565c0;" onclick="addEmployee()">+ Dodaj</button>
+        </div>
+        <div id="empChips" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;"></div>
+    </div>
 </div>
 
 <script>
@@ -434,6 +491,7 @@ async function saveData() {
             type: docType,
             total: document.getElementById('total').innerText, 
             date: new Date().toLocaleDateString('hr-HR'), 
+            created: Date.now(),
             isDeleted: false
         };
         
@@ -445,10 +503,22 @@ async function saveData() {
     }
 }
 
-async function deleteOffer(id) {
-    if(confirm("Obriši ponudu?")) {
-        try { await db.collection("ponude").doc(id).update({ isDeleted: true }); openAdmin(); } catch (e) { alert("Greška."); }
-    }
+// Brisanje je "meko": zapis se samo označi i seli u Koš, iz baze se NIKAD ne briše.
+// Traži dvije potvrde da se izbjegne slučajni klik.
+async function deleteOffer(id, oznaka) {
+    if (!confirm("Premjestiti " + (oznaka || "dokument") + " u Koš?")) return;
+    if (!confirm("Još jednom za potvrdu — premještam u Koš?\n\nDokument ostaje sačuvan i možeš ga vratiti iz Koša.")) return;
+    try {
+        await db.collection("ponude").doc(id).update({ isDeleted: true, deletedAt: Date.now() });
+        openAdmin();
+    } catch (e) { alert("Greška pri brisanju."); }
+}
+
+async function restoreOffer(id) {
+    try {
+        await db.collection("ponude").doc(id).update({ isDeleted: false });
+        openAdmin();
+    } catch (e) { alert("Greška pri vraćanju."); }
 }
 
 // Otvara admin arhivu; ako nisi prijavljen, prvo traži prijavu pa onda otvara arhivu.
@@ -491,23 +561,52 @@ function logout() {
     closeAdmin();
 }
 
+let archView = 'sve';
+
+function setArchView(v) {
+    archView = v;
+    ['sve','ponuda','racun','kos'].forEach(k => {
+        document.getElementById('at-' + k).style.background = (k === v) ? '#1565c0' : '#b0bec5';
+    });
+    document.getElementById('kos-info').style.display = (v === 'kos') ? 'block' : 'none';
+    document.getElementById('admin-title').innerText = (v === 'kos') ? 'Arhiva — Koš' : 'Arhiva';
+    openAdmin();
+}
+
 async function openAdmin() {
     document.getElementById('admin-panel').style.display = 'block';
-    const list = document.getElementById('admin-list'); 
-    list.innerHTML = "Učitavam...";
+    const list = document.getElementById('admin-list');
+    list.innerHTML = '<tr><td colspan="5">Učitavam...</td></tr>';
+    const q = (document.getElementById('archSearch').value || '').toLowerCase().trim();
     try {
-        const snap = await db.collection("ponude").where("isDeleted", "==", false).get(); 
-        list.innerHTML = "";
-        snap.forEach(doc => {
-            const d = doc.data();
+        const snap = await db.collection("ponude").get();
+        let rows = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const inKos = (archView === 'kos');
+        rows = rows.filter(d => (!!d.isDeleted) === inKos);
+        if (archView === 'ponuda') rows = rows.filter(d => (d.type || 'ponuda') === 'ponuda');
+        if (archView === 'racun') rows = rows.filter(d => d.type === 'racun');
+        if (q) rows = rows.filter(d => (d.name || '').toLowerCase().includes(q) || String(d.num || '').includes(q));
+        rows.sort((a, b) => (b.created || 0) - (a.created || 0));
+
+        if (!rows.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:25px;">Nema zapisa.</td></tr>'; return; }
+
+        list.innerHTML = '';
+        rows.forEach(d => {
             const tr = document.createElement('tr');
             const isRacun = (d.type === 'racun');
-            const convertBtn = isRacun ? '' : ` <button class="btn" style="padding:5px; background:#2e7d32;" onclick="convertToRacun('${doc.id}')">→ Račun</button>`;
-            tr.innerHTML = `<td>${d.date}</td><td>${(isRacun ? 'Račun ' : 'Ponuda ') + d.num}</td><td>${d.name}</td><td>${d.total}</td><td><button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${doc.id}')">Otvori</button>${convertBtn} <button class="btn btn-delete" onclick="deleteOffer('${doc.id}')">🗑️</button></td>`;
+            const oznaka = (isRacun ? 'Račun ' : 'Ponuda ') + d.num;
+            let akcije;
+            if (inKos) {
+                akcije = `<button class="btn" style="padding:5px 12px; background:#2e7d32;" onclick="restoreOffer('${d.id}')">↩ Vrati</button>`;
+            } else {
+                const convertBtn = isRacun ? '' : ` <button class="btn" style="padding:5px; background:#2e7d32;" onclick="convertToRacun('${d.id}')">→ Račun</button>`;
+                akcije = `<button class="btn btn-print" style="padding:5px;" onclick="loadOffer('${d.id}')">Otvori</button>${convertBtn} <button class="btn btn-delete" onclick="deleteOffer('${d.id}','${oznaka}')">🗑️</button>`;
+            }
+            tr.innerHTML = `<td>${d.date || ''}</td><td>${oznaka}</td><td>${d.name || ''}</td><td>${d.total || ''}</td><td>${akcije}</td>`;
             list.appendChild(tr);
         });
     } catch (e) {
-        list.innerHTML = "Greška pri učitavanju. Provjerite Firebase pravila.";
+        list.innerHTML = '<tr><td colspan="5">Greška pri učitavanju. Provjerite Firebase pravila.</td></tr>';
     }
 }
 
@@ -595,8 +694,9 @@ function insertDictated(txt) {
 }
 
 // ===================== SATNICE =====================
-// Podaci: zaposlenici (imena), sati (dnevni unosi), isplate (samo oznaka DA/NE po
-// mjesecu — bez iznosa, namjerno, radi sigurnosti). Sve iza prijave.
+// Podaci: zaposlenici, sati (dnevni unosi), isplate (samo oznaka DA/NE po mjesecu,
+// bez iznosa — namjerno, radi sigurnosti). Sve iza prijave.
+// Brisanje je meko: unos se označi kao obrisan i vidi se pod "Prikaži koš", gdje se vraća.
 let employees = [];
 
 function openSatnice() {
@@ -607,19 +707,32 @@ function openSatnice() {
     document.getElementById('btn-satnice').style.background = '#1565c0';
     document.getElementById('btn-ponuda').style.background = '#b0bec5';
     document.getElementById('btn-racun').style.background = '#b0bec5';
-    const today = new Date();
-    const iso = today.toISOString();
+    const iso = new Date().toISOString();
     if (!document.getElementById('tsMonth').value) document.getElementById('tsMonth').value = iso.slice(0, 7);
     if (!document.getElementById('tsDate').value) document.getElementById('tsDate').value = iso.slice(0, 10);
     loadEmployees().then(renderSatnice);
 }
 
+// Pomicanje prikaza mjesec unaprijed/unatrag strelicama.
+function shiftMonth(delta) {
+    const el = document.getElementById('tsMonth');
+    if (!el.value) return;
+    const [y, m] = el.value.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    el.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    renderSatnice();
+}
+
 async function loadEmployees() {
-    const snap = await db.collection('zaposlenici').orderBy('name').get();
-    employees = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+    const snap = await db.collection('zaposlenici').get();
+    employees = snap.docs.map(d => ({ id: d.id, name: d.data().name, active: d.data().active !== false }))
+        .filter(e => e.active).sort((a, b) => a.name.localeCompare(b.name));
     const opts = employees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
     document.getElementById('tsEmp').innerHTML = opts || '<option value="">— prvo dodaj zaposlenika —</option>';
     document.getElementById('tsFilterEmp').innerHTML = '<option value="">Svi zaposlenici</option>' + opts;
+    document.getElementById('empChips').innerHTML = employees.map(e =>
+        `<div class="chip">${e.name}<span title="Ukloni s popisa" onclick="removeEmployee('${e.id}','${e.name}')">×</span></div>`
+    ).join('') || '<span style="font-size:13px; color:#888;">Još nema zaposlenika.</span>';
 }
 
 async function addEmployee() {
@@ -627,10 +740,18 @@ async function addEmployee() {
     const name = inp.value.trim();
     if (!name) return;
     if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { alert("Zaposlenik s tim imenom već postoji."); return; }
-    await db.collection('zaposlenici').add({ name });
+    await db.collection('zaposlenici').add({ name, active: true });
     inp.value = '';
     await loadEmployees();
-    renderSatnice();
+}
+
+// Zaposlenik se ne briše iz baze — samo se skida s popisa, da svi njegovi
+// prošli unosi sati ostanu sačuvani i vidljivi u statistici.
+async function removeEmployee(id, name) {
+    if (!confirm("Ukloniti " + name + " s popisa zaposlenika?")) return;
+    if (!confirm("Još jednom za potvrdu.\n\nSvi dosadašnji unosi sati ostaju sačuvani — miče se samo s popisa za nove unose.")) return;
+    await db.collection('zaposlenici').doc(id).update({ active: false });
+    await loadEmployees();
 }
 
 async function addEntry() {
@@ -643,40 +764,68 @@ async function addEntry() {
     if (!date || !emp) { alert("Datum i zaposlenik su obavezni."); return; }
     if (isNaN(hours) || hours <= 0) { alert("Upiši broj sati."); return; }
     try {
-        await db.collection('sati').add({ date, emp, proj, hours, dnevnica, note, created: Date.now() });
+        await db.collection('sati').add({ date, emp, proj, hours, dnevnica, note, isDeleted: false, created: Date.now() });
         document.getElementById('tsNote').value = '';
         document.getElementById('tsDnevnica').checked = false;
-        // mjesec prikaza prati datum unosa da se novi red odmah vidi
         document.getElementById('tsMonth').value = date.slice(0, 7);
         renderSatnice();
     } catch (e) { alert("Greška pri spremanju unosa."); console.error(e); }
 }
 
-async function deleteEntry(id) {
-    if (!confirm("Obrisati ovaj unos?")) return;
-    await db.collection('sati').doc(id).delete();
+async function deleteEntry(id, opis) {
+    if (!confirm("Premjestiti unos u koš?\n" + opis)) return;
+    if (!confirm("Još jednom za potvrdu.\n\nUnos ostaje sačuvan i možeš ga vratiti kvačicom „Prikaži koš\".")) return;
+    await db.collection('sati').doc(id).update({ isDeleted: true, deletedAt: Date.now() });
+    renderSatnice();
+}
+
+async function restoreEntry(id) {
+    await db.collection('sati').doc(id).update({ isDeleted: false });
     renderSatnice();
 }
 
 async function renderSatnice() {
     const m = document.getElementById('tsMonth').value;
-    const filterEmp = document.getElementById('tsFilterEmp').value;
     if (!m) return;
+    const filterEmp = document.getElementById('tsFilterEmp').value;
+    const showKos = document.getElementById('tsShowKos').checked;
+
     const snap = await db.collection('sati').where('date', '>=', m + '-01').where('date', '<=', m + '-31').get();
-    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    rows.sort((a, b) => b.date.localeCompare(a.date));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const live = all.filter(r => !r.isDeleted);
+    live.sort((a, b) => b.date.localeCompare(a.date));
 
-    // --- tablica unosa (uz filter zaposlenika) ---
-    const shown = filterEmp ? rows.filter(r => r.emp === filterEmp) : rows;
-    document.getElementById('tsBody').innerHTML = shown.map(r =>
-        `<td>${r.date.split('-').reverse().join('.')}.</td><td>${r.emp}</td><td>${r.proj || '—'}</td><td>${r.hours}</td><td>${r.dnevnica ? '✓' : ''}</td><td>${r.note || ''}</td><td><button class="btn btn-delete" onclick="deleteEntry('${r.id}')">🗑️</button></td>`
-    ).map(h => `<tr>${h}</tr>`).join('') || '<tr><td colspan="7" style="text-align:center; color:#888;">Nema unosa za odabrani mjesec.</td></tr>';
+    // --- prijedlozi projekata za brži unos ---
+    const projNames = [...new Set(live.map(r => r.proj).filter(Boolean))];
+    document.getElementById('projList').innerHTML = projNames.map(p => `<option value="${p}">`).join('');
 
-    // --- statistika po zaposleniku (cijeli mjesec, bez filtera) ---
+    // --- KPI kartice ---
+    const totalH = live.reduce((s, r) => s + r.hours, 0);
+    const totalD = live.filter(r => r.dnevnica).length;
+    const uniqDays = new Set(live.map(r => r.date)).size;
+    const uniqEmp = new Set(live.map(r => r.emp)).size;
+    document.getElementById('tsKpi').innerHTML = `
+        <div class="kpi"><div class="kpi-v">${Math.round(totalH * 10) / 10}</div><div class="kpi-l">ukupno sati</div></div>
+        <div class="kpi"><div class="kpi-v">${uniqDays}</div><div class="kpi-l">radnih dana</div></div>
+        <div class="kpi"><div class="kpi-v">${uniqEmp}</div><div class="kpi-l">zaposlenika</div></div>
+        <div class="kpi"><div class="kpi-v">${totalD}</div><div class="kpi-l">dnevnica</div></div>`;
+
+    // --- tablica unosa ---
+    let shown = showKos ? all.filter(r => r.isDeleted) : live;
+    if (filterEmp) shown = shown.filter(r => r.emp === filterEmp);
+    document.getElementById('tsBody').innerHTML = shown.map(r => {
+        const dat = r.date.split('-').reverse().join('.') + '.';
+        const btn = showKos
+            ? `<button class="btn" style="padding:4px 10px; background:#2e7d32; font-size:12px;" onclick="restoreEntry('${r.id}')">↩</button>`
+            : `<button class="btn btn-delete" onclick="deleteEntry('${r.id}','${dat} ${r.emp}')">🗑️</button>`;
+        return `<tr style="${r.isDeleted ? 'opacity:.6;' : ''}"><td>${dat}</td><td>${r.emp}</td><td>${r.proj || '—'}</td><td><b>${r.hours}</b></td><td>${r.dnevnica ? '✓' : ''}</td><td style="color:#777;">${r.note || ''}</td><td>${btn}</td></tr>`;
+    }).join('') || `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">${showKos ? 'Koš je prazan.' : 'Nema unosa za odabrani mjesec.'}</td></tr>`;
+
+    // --- statistika po zaposleniku ---
     const isplateSnap = await db.collection('isplate').where('month', '==', m).get();
     const paid = new Set(isplateSnap.docs.map(d => d.data().emp));
     const byEmp = {};
-    rows.forEach(r => {
+    live.forEach(r => {
         if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set(), dnevnice: 0 };
         byEmp[r.emp].hours += r.hours;
         byEmp[r.emp].days.add(r.date);
@@ -685,26 +834,22 @@ async function renderSatnice() {
     document.getElementById('tsStatsEmp').innerHTML = Object.keys(byEmp).sort().map(emp => {
         const s = byEmp[emp];
         const isPaid = paid.has(emp);
-        return `<tr><td>${emp}</td><td><b>${s.hours}</b></td><td>${s.days.size}</td><td>${s.dnevnice}</td><td><button class="btn" style="padding:5px 12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp.replace(/'/g, "\\'")}')">${isPaid ? '✓ DA' : 'NE'}</button></td></tr>`;
-    }).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Nema podataka.</td></tr>';
+        return `<tr><td>${emp}</td><td><b>${Math.round(s.hours * 10) / 10}</b></td><td>${s.days.size}</td><td>${s.dnevnice}</td><td><button class="btn" style="padding:4px 10px; font-size:12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${isPaid ? '✓ DA' : 'NE'}</button></td></tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center; color:#888; padding:15px;">Nema podataka.</td></tr>';
 
-    // --- statistika po projektu ---
+    // --- statistika po projektu, s trakom udjela ---
     const byProj = {};
-    let totalH = 0;
-    rows.forEach(r => {
-        const p = r.proj || '(bez projekta)';
-        byProj[p] = (byProj[p] || 0) + r.hours;
-        totalH += r.hours;
-    });
-    document.getElementById('tsStatsProj').innerHTML = Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p =>
-        `<tr><td>${p}</td><td><b>${byProj[p]}</b></td><td>${totalH ? Math.round(byProj[p] / totalH * 100) : 0}%</td></tr>`
-    ).join('') || '<tr><td colspan="3" style="text-align:center; color:#888;">Nema podataka.</td></tr>';
+    live.forEach(r => { const p = r.proj || '(bez projekta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
+    document.getElementById('tsStatsProj').innerHTML = Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p => {
+        const pct = totalH ? Math.round(byProj[p] / totalH * 100) : 0;
+        return `<tr><td>${p}</td><td><b>${Math.round(byProj[p] * 10) / 10}</b></td><td><div style="display:flex; align-items:center; gap:6px;"><div class="bar" style="flex:1;"><div style="width:${pct}%"></div></div><span style="font-size:11px; color:#777;">${pct}%</span></div></td></tr>`;
+    }).join('') || '<tr><td colspan="3" style="text-align:center; color:#888; padding:15px;">Nema podataka.</td></tr>';
 }
 
 // Oznaka "plaća isplaćena" za zaposlenika u odabranom mjesecu — samo DA/NE, bez iznosa.
 async function togglePaid(emp) {
     const m = document.getElementById('tsMonth').value;
-    const id = (m + '_' + emp).replace(/[\/\s]/g, '-');
+    const id = (m + '_' + emp).replace(/[\/\s\.]/g, '-');
     const ref = db.collection('isplate').doc(id);
     const doc = await ref.get();
     if (doc.exists) await ref.delete();
