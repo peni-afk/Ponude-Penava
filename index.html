@@ -93,6 +93,8 @@
         .st-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eee; }
         .st-row:last-child { border-bottom:none; }
         .st-name { flex:1; font-weight:600; font-size:14px; min-width:110px; }
+        .emp-block { padding:14px 0; border-bottom:1px solid #eee; }
+        .emp-block:last-of-type { border-bottom:none; }
         .st-meta { font-size:12.5px; color:#777; }
         @media screen and (max-width: 700px) {
             .ts-form > div { width:100% !important; flex:none !important; }
@@ -329,7 +331,7 @@
             </div>
         </div>
         <div id="gridWrap" style="overflow-x:auto;"></div>
-        <div style="font-size:12px; color:#888; margin-top:10px;">Upiši broj sati u ćeliju. Prazno = nije radio. Dvoklik na ćeliju za napomenu.</div>
+        <div id="gridHint" style="font-size:12px; color:#888; margin-top:10px;"></div>
     </div>
 
     <div class="ts-card">
@@ -854,8 +856,8 @@ function addProject() {
 function fillProjSelect(selected) {
     const sel = document.getElementById('gridProj');
     const cur = selected || sel.value;
-    sel.innerHTML = projects.map(p => `<option value="${p}">${p}</option>`).join('')
-        || '<option value="">— dodaj projekt —</option>';
+    sel.innerHTML = '<option value="__ALL__">— sva gradilišta —</option>'
+        + projects.map(p => `<option value="${p}">${p}</option>`).join('');
     if (cur && projects.includes(cur)) sel.value = cur;
 }
 
@@ -894,6 +896,7 @@ function renderKpi() {
 function renderGrid() {
     const m = document.getElementById('tsMonth').value;
     const proj = document.getElementById('gridProj').value;
+    const allProj = (proj === '__ALL__');
     const wrap = document.getElementById('gridWrap');
     if (!employees.length) { wrap.innerHTML = '<div style="color:#888; padding:20px; text-align:center;">Dodaj zaposlenika (dolje) da se pojavi mreža.</div>'; return; }
 
@@ -925,28 +928,41 @@ function renderGrid() {
         let sumCells = '';
         for (let d = from; d <= to; d++) {
             const ds = m + '-' + String(d).padStart(2, '0');
-            const rec = monthRows.find(r => r.emp === e.name && r.date === ds && (r.proj || '') === proj);
             const wd = new Date(y, mo - 1, d).getDay();
             const we = (wd === 0 || wd === 6);
+            if (allProj) {
+                // zbirni prikaz svih gradili\u0161ta \u2014 samo za pregled, bez ure\u0111ivanja
+                const recs = monthRows.filter(r => r.emp === e.name && r.date === ds);
+                const sum = recs.reduce((a, r) => a + r.hours, 0);
+                const cls = [we ? 'wknd' : '', sum ? 'filled' : ''].filter(Boolean).join(' ');
+                const tip = recs.map(r => (r.proj || '?') + ': ' + r.hours + ' h').join(' | ');
+                sumCells += `<td class="${cls}"${tip ? ` title="${tip}"` : ''}><div style="width:38px; height:31px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#2e7d32;">${sum || ''}</div></td>`;
+                continue;
+            }
+            const rec = monthRows.find(r => r.emp === e.name && r.date === ds && (r.proj || '') === proj);
             const v = rec ? rec.hours : '';
             const cls = [we ? 'wknd' : '', rec ? 'filled' : '', (rec && rec.note) ? 'hasnote' : ''].filter(Boolean).join(' ');
             const tip = rec && rec.note ? rec.note : '';
             const t = tip ? ` title="${tip}"` : '';
             sumCells += `<td class="${cls}"${t}><input class="h" type="text" inputmode="decimal" value="${v}" data-emp="${e.name}" data-date="${ds}" onchange="saveCell(this)" ondblclick="openCellModal(this)"></td>`;
         }
-        const empRecs = monthRows.filter(r => r.emp === e.name && (r.proj || '') === proj);
+        const empRecs = monthRows.filter(r => r.emp === e.name && (allProj || (r.proj || '') === proj));
         const monthSum = empRecs.reduce((s, r) => s + r.hours, 0);
         const monthDays = new Set(empRecs.map(r => r.date)).size;
         rows += `<tr><td class="emp-c">${e.name}</td>${sumCells}<td class="sum">${Math.round(monthSum * 10) / 10} h<br><span style="font-size:11px; color:#888; font-weight:normal;">${monthDays} d</span></td></tr>`;
     });
 
     wrap.innerHTML = `<table class="gr"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+    document.getElementById('gridHint').innerText = allProj
+        ? 'Zbirni prikaz svih gradili\u0161ta \u2014 samo za pregled. Za unos sati odaberi pojedino gradili\u0161te.'
+        : 'Upi\u0161i broj sati u \u0107eliju. Prazno = nije radio. Dvoklik na \u0107eliju za napomenu.';
 }
 
 // Sprema jednu ćeliju. Prazno polje = meko brisanje postojećeg zapisa.
 async function saveCell(inp) {
     const emp = inp.dataset.emp, date = inp.dataset.date;
     const proj = document.getElementById('gridProj').value;
+    if (proj === '__ALL__') return; // zbirni prikaz se ne uređuje
     const raw = inp.value.trim().replace(',', '.');
     const rec = monthRows.find(r => r.emp === emp && r.date === date && (r.proj || '') === proj);
 
@@ -972,6 +988,7 @@ let cellCtx = null;
 function openCellModal(inp) {
     const emp = inp.dataset.emp, date = inp.dataset.date;
     const proj = document.getElementById('gridProj').value;
+    if (proj === '__ALL__') return;
     const rec = monthRows.find(r => r.emp === emp && r.date === date && (r.proj || '') === proj);
     cellCtx = { emp, date, proj, id: rec ? rec.id : null };
     document.getElementById('cellTitle').innerText = emp + ' \u2014 ' + date.split('-').reverse().join('.') + '.';
@@ -1077,14 +1094,22 @@ async function renderPayouts() {
 
 function renderStats() {
     const totalH = monthRows.reduce((s, r) => s + r.hours, 0);
+
+    // po zaposleniku, s razradom po gradili\u0161tima (svi projekti zajedno)
     const byEmp = {};
     monthRows.forEach(r => {
-        if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set() };
-        byEmp[r.emp].hours += r.hours;
-        byEmp[r.emp].days.add(r.date);
+        if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set(), proj: {} };
+        const e = byEmp[r.emp];
+        e.hours += r.hours;
+        e.days.add(r.date);
+        const p = r.proj || '(bez gradili\u0161ta)';
+        if (!e.proj[p]) e.proj[p] = { hours: 0, days: new Set() };
+        e.proj[p].hours += r.hours;
+        e.proj[p].days.add(r.date);
     });
+
     const byProj = {};
-    monthRows.forEach(r => { const p = r.proj || '(bez projekta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
+    monthRows.forEach(r => { const p = r.proj || '(bez gradili\u0161ta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
 
     const empKeys = Object.keys(byEmp).sort();
     if (!empKeys.length) { document.getElementById('tsStats').innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Nema podataka za odabrani mjesec.</div>'; return; }
@@ -1093,19 +1118,36 @@ function renderStats() {
         const s = byEmp[emp];
         const dana = s.days.size;
         const prosj = dana ? Math.round(s.hours / dana * 10) / 10 : 0;
-        return `<div class="st-row">
-            <div class="st-name">${emp}</div>
-            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; <b>${dana}</b> radnih dana (= dnevnica) &nbsp;·&nbsp; prosjek ${prosj} h/dan</div>
+        const pk = Object.keys(s.proj).sort((a, b) => s.proj[b].hours - s.proj[a].hours);
+        const razrada = pk.map(p => {
+            const x = s.proj[p];
+            const pct = s.hours ? Math.round(x.hours / s.hours * 100) : 0;
+            return `<div style="display:flex; align-items:center; gap:10px; padding:4px 0; font-size:12.5px;">
+                <div style="flex:1; color:#555;">${p}</div>
+                <div class="bar" style="width:90px; height:12px;"><div style="width:${pct}%"></div></div>
+                <div style="width:96px; text-align:right; color:#777;"><b style="color:#333;">${Math.round(x.hours * 10) / 10}</b> h \u00b7 ${x.days.size} d</div>
+            </div>`;
+        }).join('');
+        return `<div class="emp-block">
+            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                <div style="font-weight:600; font-size:15px; flex:1; min-width:120px;">${emp}</div>
+                <div style="font-size:13px; color:#777;">
+                    <b style="color:#1565c0; font-size:16px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;\u00b7&nbsp;
+                    <b style="color:#333;">${dana}</b> dana (= dnevnica) &nbsp;\u00b7&nbsp;
+                    \u00f8 ${prosj} h/dan &nbsp;\u00b7&nbsp; ${pk.length} gradili\u0161ta
+                </div>
+            </div>
+            ${razrada}
         </div>`;
     }).join('');
 
-    html += `<div style="margin-top:18px; font-size:12px; font-weight:bold; color:#555; text-transform:uppercase;">Po projektu</div>`;
+    html += `<div style="margin-top:20px; font-size:12px; font-weight:bold; color:#555; text-transform:uppercase;">Ukupno po gradili\u0161tu</div>`;
     html += Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p => {
         const pct = totalH ? Math.round(byProj[p] / totalH * 100) : 0;
         return `<div class="st-row">
             <div class="st-name" style="font-weight:400;">${p}</div>
             <div class="bar" style="width:120px;"><div style="width:${pct}%"></div></div>
-            <div class="st-meta" style="width:80px; text-align:right;"><b>${Math.round(byProj[p] * 10) / 10}</b> h · ${pct}%</div>
+            <div class="st-meta" style="width:80px; text-align:right;"><b>${Math.round(byProj[p] * 10) / 10}</b> h \u00b7 ${pct}%</div>
         </div>`;
     }).join('');
 
