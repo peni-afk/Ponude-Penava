@@ -43,7 +43,7 @@
         .footer-content { margin-top: auto; width: 100%; }
         .thanks-msg { text-align: center; font-style: italic; font-weight: bold; margin-top: 40px; font-size: 1.1em; width: 100%; }
 
-        #mobile-modal, #login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        #mobile-modal, #login-modal, #cell-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
         #login-modal .modal-content { max-width: 380px; }
         #login-error { color: #f44336; font-size: 0.9em; margin-top: 10px; min-height: 18px; }
@@ -89,6 +89,7 @@
         .gr td.filled { background:#f1f8f2; }
         .gr td.hasnote { position:relative; }
         .gr td.hasnote::after { content:''; position:absolute; top:1px; right:1px; border:4px solid transparent; border-top-color:#f39c12; border-right-color:#f39c12; }
+        .gr td { position:relative; }
         .st-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eee; }
         .st-row:last-child { border-bottom:none; }
         .st-name { flex:1; font-weight:600; font-size:14px; min-width:110px; }
@@ -203,6 +204,20 @@
 
 <div id="mic-float" class="no-print" onclick="micClick()" title="Diktiraj u ovo polje" style="display:none; position:absolute; z-index:3100; width:30px; height:30px; border-radius:50%; background:#1565c0; color:#fff; align-items:center; justify-content:center; cursor:pointer; font-size:15px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🎤</div>
 
+<div id="cell-modal" class="no-print">
+    <div class="modal-content" style="max-width:360px;">
+        <h3 style="margin-top:0; color:#1565c0;" id="cellTitle">Dan</h3>
+        <label>Sati:</label>
+        <input type="number" id="cellHours" step="0.5" min="0" max="24" style="font-size:16px;">
+        <label>Napomena:</label>
+        <input type="text" id="cellNote" placeholder="neobavezno" style="font-size:16px;">
+        <div class="modal-actions">
+            <button class="btn btn-add" style="flex:1;" onclick="saveCellModal()">SPREMI</button>
+            <button class="btn" style="flex:1; background:#666;" onclick="document.getElementById('cell-modal').style.display='none'">ODUSTANI</button>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <div class="logo-container">
         <img src="logo.png" alt="Logo" onerror="this.style.display='none';">
@@ -315,11 +330,6 @@
         </div>
         <div id="gridWrap" style="overflow-x:auto;"></div>
         <div style="font-size:12px; color:#888; margin-top:10px;">Upiši broj sati u ćeliju. Prazno = nije radio. Dvoklik na ćeliju za napomenu.</div>
-    </div>
-
-    <div class="ts-card">
-        <div class="ts-h">Priznate dnevnice — <span id="dnMonthLbl"></span></div>
-        <div id="tsDnevnice"></div>
     </div>
 
     <div class="ts-card">
@@ -861,7 +871,6 @@ async function renderSatnice() {
 
     renderKpi();
     renderGrid();
-    renderDnevnice();
     renderStats();
     fillPayEmpSelects();
     renderPayouts();
@@ -921,8 +930,9 @@ function renderGrid() {
             const we = (wd === 0 || wd === 6);
             const v = rec ? rec.hours : '';
             const cls = [we ? 'wknd' : '', rec ? 'filled' : '', (rec && rec.note) ? 'hasnote' : ''].filter(Boolean).join(' ');
-            const t = rec && rec.note ? ` title="${rec.note}"` : '';
-            sumCells += `<td class="${cls}"${t}><input class="h" type="text" inputmode="decimal" value="${v}" data-emp="${e.name}" data-date="${ds}" onchange="saveCell(this)" ondblclick="editNote(this)"></td>`;
+            const tip = rec && rec.note ? rec.note : '';
+            const t = tip ? ` title="${tip}"` : '';
+            sumCells += `<td class="${cls}"${t}><input class="h" type="text" inputmode="decimal" value="${v}" data-emp="${e.name}" data-date="${ds}" onchange="saveCell(this)" ondblclick="openCellModal(this)"></td>`;
         }
         const empRecs = monthRows.filter(r => r.emp === e.name && (r.proj || '') === proj);
         const monthSum = empRecs.reduce((s, r) => s + r.hours, 0);
@@ -954,14 +964,40 @@ async function saveCell(inp) {
     } catch (e) { alert("Greška pri spremanju."); }
 }
 
-async function editNote(inp) {
+// Dvoklik na ćeliju otvara prozor za precizniji unos sati i napomenu za taj dan.
+// Dnevnica se ne označava zasebno — svaki odrađeni dan je ujedno i dnevnica,
+// a isplata dnevnica vodi se periodično u kartici Isplate.
+let cellCtx = null;
+
+function openCellModal(inp) {
     const emp = inp.dataset.emp, date = inp.dataset.date;
     const proj = document.getElementById('gridProj').value;
     const rec = monthRows.find(r => r.emp === emp && r.date === date && (r.proj || '') === proj);
-    if (!rec) { alert("Prvo upiši sate, pa onda napomenu."); return; }
-    const n = prompt("Napomena za " + emp + ", " + date.split('-').reverse().join('.') + ".:", rec.note || '');
-    if (n === null) return;
-    await db.collection('sati').doc(rec.id).update({ note: n.trim() });
+    cellCtx = { emp, date, proj, id: rec ? rec.id : null };
+    document.getElementById('cellTitle').innerText = emp + ' \u2014 ' + date.split('-').reverse().join('.') + '.';
+    document.getElementById('cellHours').value = rec ? rec.hours : '';
+    document.getElementById('cellNote').value = rec ? (rec.note || '') : '';
+    document.getElementById('cell-modal').style.display = 'flex';
+}
+
+async function saveCellModal() {
+    if (!cellCtx) return;
+    const h = parseFloat(String(document.getElementById('cellHours').value).replace(',', '.'));
+    const note = document.getElementById('cellNote').value.trim();
+    const { emp, date, proj, id } = cellCtx;
+
+    if (isNaN(h) || h <= 0) {
+        // prazni sati = meko brisanje zapisa
+        if (id) await db.collection('sati').doc(id).update({ isDeleted: true, deletedAt: Date.now() });
+    } else if (h > 24) {
+        alert("Upi\u0161i broj sati izme\u0111u 0 i 24."); return;
+    } else if (id) {
+        await db.collection('sati').doc(id).update({ hours: h, note });
+    } else {
+        await db.collection('sati').add({ date, emp, proj, hours: h, note, isDeleted: false, created: Date.now() });
+    }
+    document.getElementById('cell-modal').style.display = 'none';
+    cellCtx = null;
     await refreshMonth();
 }
 
@@ -972,37 +1008,7 @@ async function refreshMonth() {
     monthRows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !r.isDeleted);
     const found = [...new Set(monthRows.map(r => r.proj).filter(Boolean))];
     found.forEach(p => { if (!projects.includes(p)) projects.push(p); });
-    renderKpi(); renderGrid(); renderDnevnice(); renderStats();
-}
-
-// Priznate dnevnice: aplikacija predloži broj dana na terenu, ali broj je uredljiv,
-// jer se dnevnica ne priznaje automatski za svaki radni dan. Ovdje se SAMO priznaje;
-// je li i kada isplaćeno vodi se odvojeno, u evidenciji isplata ispod.
-async function renderDnevnice() {
-    const m = document.getElementById('tsMonth').value;
-    document.getElementById('dnMonthLbl').innerText = mjesecNaziv(m);
-    const snap = await db.collection('dnevnice').where('month', '==', m).get();
-    const saved = {};
-    snap.docs.forEach(d => { saved[d.data().emp] = d.data().count; });
-
-    const byEmp = {};
-    monthRows.forEach(r => {
-        if (!byEmp[r.emp]) byEmp[r.emp] = new Set();
-        byEmp[r.emp].add(r.date);
-    });
-    const keys = Object.keys(byEmp).sort();
-    if (!keys.length) { document.getElementById('tsDnevnice').innerHTML = '<div style="color:#888; padding:12px; text-align:center;">Nema evidentiranih dana u ovom mjesecu.</div>'; return; }
-
-    document.getElementById('tsDnevnice').innerHTML = keys.map(emp => {
-        const dana = byEmp[emp].size;
-        const val = saved[emp] !== undefined ? saved[emp] : dana;
-        return `<div class="st-row">
-            <div class="st-name">${emp}</div>
-            <div class="st-meta">radio ${dana} dana</div>
-            <div class="st-meta">priznato dnevnica:</div>
-            <input type="number" min="0" value="${val}" style="width:60px; text-align:center; margin:0; padding:5px;" onchange="saveDnevnica('${emp}', this.value)">
-        </div>`;
-    }).join('');
+    renderKpi(); renderGrid(); renderStats();
 }
 
 function mjesecNaziv(m) {
@@ -1010,14 +1016,6 @@ function mjesecNaziv(m) {
     if (!m) return '';
     const [y, mo] = m.split('-').map(Number);
     return n[mo - 1] + ' ' + y;
-}
-
-function dnevnicaId(m, emp) { return (m + '_' + emp).replace(/[^\wČĆŽŠĐčćžšđ-]/g, '-'); }
-
-async function saveDnevnica(emp, count) {
-    const m = document.getElementById('tsMonth').value;
-    await db.collection('dnevnice').doc(dnevnicaId(m, emp)).set(
-        { emp, month: m, count: parseInt(count, 10) || 0 }, { merge: true });
 }
 
 // ---------- Evidencija isplata ----------
@@ -1097,7 +1095,7 @@ function renderStats() {
         const prosj = dana ? Math.round(s.hours / dana * 10) / 10 : 0;
         return `<div class="st-row">
             <div class="st-name">${emp}</div>
-            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; <b>${dana}</b> radnih dana &nbsp;·&nbsp; prosjek ${prosj} h/dan</div>
+            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; <b>${dana}</b> radnih dana (= dnevnica) &nbsp;·&nbsp; prosjek ${prosj} h/dan</div>
         </div>`;
     }).join('');
 
