@@ -51,6 +51,17 @@
         .modal-content label { display: block; font-weight: bold; margin-bottom: 5px; margin-top: 10px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
         .ts-label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; color: #555; }
+        #side-nav { position: fixed; top: 20px; left: 20px; width: 140px; display: flex; flex-direction: column; gap: 4px; z-index: 900; }
+        .nav-item { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border: none; border-radius: 8px; background: transparent; color: #5a6570; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; font-family: inherit; }
+        .nav-item span { font-size: 16px; }
+        .nav-item:hover { background: #e3f2fd; color: #1565c0; }
+        .nav-item.nav-on { background: #1565c0; color: #fff; }
+        .nav-sep { height: 1px; background: #d6dade; margin: 6px 8px; }
+        @media screen and (max-width: 1180px) {
+            #side-nav { position: static; width: auto; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 auto 15px auto; max-width: 850px; }
+            .nav-item { flex: 1; min-width: 90px; justify-content: center; padding: 10px 8px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+            .nav-sep { display: none; }
+        }
         .ts-card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-bottom:15px; }
         .ts-h { font-weight:600; color:#1565c0; margin-bottom:12px; font-size:15px; }
         .ts-card table th { padding:8px; font-size:12px; }
@@ -62,6 +73,16 @@
         .chip span { cursor:pointer; color:#f44336; font-weight:bold; }
         .bar { background:#eceff1; border-radius:8px; height:16px; overflow:hidden; }
         .bar div { background:#1565c0; height:100%; }
+        .ts-form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+        .ts-form input, .ts-form select { margin-bottom:0; }
+        .st-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eee; }
+        .st-row:last-child { border-bottom:none; }
+        .st-name { flex:1; font-weight:600; font-size:14px; min-width:110px; }
+        .st-meta { font-size:12.5px; color:#777; }
+        @media screen and (max-width: 700px) {
+            .ts-form > div { width:100% !important; flex:none !important; }
+            .st-row { flex-wrap:wrap; gap:6px; }
+        }
 
         @media screen and (max-width: 600px) {
             .container { padding: 20px; min-height: auto; width: 850px; transform: scale(0.45); transform-origin: top left; margin-bottom: -500px; }
@@ -158,13 +179,15 @@
     </div>
 </div>
 
-<div class="no-print" style="max-width: 850px; margin: 0 auto 15px auto; display: flex; gap: 8px; justify-content: flex-start;">
-    <button id="btn-ponuda" class="btn" style="min-width:130px; background:#1565c0;" onclick="setDocType('ponuda')">PONUDA</button>
-    <button id="btn-racun" class="btn" style="min-width:130px; background:#b0bec5;" onclick="setDocType('racun')">RAČUN</button>
-    <button id="btn-satnice" class="btn" style="min-width:130px; background:#b0bec5;" onclick="openSatnice()">SATNICE</button>
+<div id="side-nav" class="no-print">
+    <button id="btn-ponuda" class="nav-item nav-on" onclick="setDocType('ponuda')"><span>📄</span> Ponuda</button>
+    <button id="btn-racun" class="nav-item" onclick="setDocType('racun')"><span>🧾</span> Račun</button>
+    <button id="btn-satnice" class="nav-item" onclick="openSatnice()"><span>🕐</span> Satnice</button>
+    <div class="nav-sep"></div>
+    <button id="btn-arhiva" class="nav-item" onclick="requireAdmin()"><span>📁</span> Arhiva</button>
 </div>
 
-<div id="mic-btn" class="no-print" title="Glasovni unos (klikni pa govori)" onclick="toggleMic()" style="position: fixed; bottom: 60px; right: 20px; font-size: 24px; cursor: pointer; z-index: 1001; background:#fff; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25);">🎤</div>
+<div id="mic-float" class="no-print" onclick="micClick()" title="Diktiraj u ovo polje" style="display:none; position:absolute; z-index:1200; width:30px; height:30px; border-radius:50%; background:#1565c0; color:#fff; align-items:center; justify-content:center; cursor:pointer; font-size:15px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🎤</div>
 
 <div class="container">
     <div class="logo-container">
@@ -267,19 +290,19 @@
 
     <div class="ts-card">
         <div class="ts-h">Novi unos</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(135px,1fr)); gap:12px; align-items:end;">
-            <div><label class="ts-label">Datum</label><input type="date" id="tsDate"></div>
-            <div><label class="ts-label">Zaposlenik</label><select id="tsEmp"></select></div>
-            <div style="grid-column:span 2;"><label class="ts-label">Projekt / gradilište</label><input type="text" id="tsProj" list="projList" placeholder="npr. Kuća Marić"><datalist id="projList"></datalist></div>
-            <div><label class="ts-label">Sati</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
-            <div>
+        <div class="ts-form">
+            <div style="width:150px;"><label class="ts-label">Datum</label><input type="date" id="tsDate"></div>
+            <div style="width:170px;"><label class="ts-label">Zaposlenik</label><select id="tsEmp"></select></div>
+            <div style="flex:1; min-width:180px;"><label class="ts-label">Projekt / gradilište</label><input type="text" id="tsProj" list="projList" placeholder="npr. Kuća Marić"><datalist id="projList"></datalist></div>
+            <div style="width:80px;"><label class="ts-label">Sati</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
+            <div style="width:95px;">
                 <label class="ts-label">Dnevnica</label>
-                <label style="display:flex; align-items:center; gap:8px; height:37px; cursor:pointer; font-size:14px; color:#555;">
-                    <input type="checkbox" id="tsDnevnica" style="width:20px; height:20px; margin:0;"> da
+                <label style="display:flex; align-items:center; gap:7px; height:37px; cursor:pointer; font-size:14px; color:#555;">
+                    <input type="checkbox" id="tsDnevnica" style="width:19px; height:19px; margin:0;"> da
                 </label>
             </div>
-            <div style="grid-column:span 2;"><label class="ts-label">Napomena</label><input type="text" id="tsNote" placeholder="neobavezno"></div>
-            <div><button class="btn btn-add" style="width:100%; margin:0;" onclick="addEntry()">DODAJ</button></div>
+            <div style="flex:1; min-width:180px;"><label class="ts-label">Napomena</label><input type="text" id="tsNote" placeholder="neobavezno"></div>
+            <div style="width:110px;"><button class="btn btn-add" style="width:100%; margin:0;" onclick="addEntry()">DODAJ</button></div>
         </div>
     </div>
 
@@ -289,7 +312,7 @@
             <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                 <select id="tsFilterEmp" onchange="renderSatnice()" style="width:auto; margin:0;"></select>
                 <label style="font-size:13px; color:#777; display:flex; align-items:center; gap:5px; cursor:pointer;">
-                    <input type="checkbox" id="tsShowKos" onchange="renderSatnice()" style="width:16px; height:16px; margin:0;"> Prikaži koš
+                    <input type="checkbox" id="tsShowKos" onchange="renderSatnice()" style="width:16px; height:16px; margin:0;"> Koš
                 </label>
             </div>
         </div>
@@ -298,15 +321,9 @@
         </div>
     </div>
 
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(330px,1fr)); gap:15px;">
-        <div class="ts-card" style="margin:0;">
-            <div class="ts-h">Po zaposleniku</div>
-            <table style="margin:0;"><thead><tr><th>Zaposlenik</th><th style="width:50px;">Sati</th><th style="width:50px;">Dana</th><th style="width:50px;">Dnev.</th><th style="width:70px;">Plaća</th></tr></thead><tbody id="tsStatsEmp"></tbody></table>
-        </div>
-        <div class="ts-card" style="margin:0;">
-            <div class="ts-h">Po projektu</div>
-            <table style="margin:0;"><thead><tr><th>Projekt</th><th style="width:55px;">Sati</th><th style="width:130px;">Udio</th></tr></thead><tbody id="tsStatsProj"></tbody></table>
-        </div>
+    <div class="ts-card">
+        <div class="ts-h">Pregled mjeseca</div>
+        <div id="tsStats"></div>
     </div>
 
     <div class="ts-card" style="margin-top:15px;">
@@ -347,14 +364,19 @@ function setDocType(t) {
     document.getElementById('docTitle').innerText = isRacun ? 'RAČUN br.' : 'PONUDA br.';
     document.getElementById('sigIssued').innerText = isRacun ? 'Račun izdao' : 'Ponudu izdao';
     document.getElementById('sigReceived').innerText = isRacun ? 'Račun preuzeo' : 'Ponudu preuzeo';
-    document.getElementById('btn-ponuda').style.background = isRacun ? '#b0bec5' : '#1565c0';
-    document.getElementById('btn-racun').style.background = isRacun ? '#1565c0' : '#b0bec5';
-    document.getElementById('btn-satnice').style.background = '#b0bec5';
+    setNavActive(isRacun ? 'btn-racun' : 'btn-ponuda');
     document.getElementById('satnice-panel').style.display = 'none';
     document.querySelector('.container').style.display = 'flex';
     document.getElementById('doc-actions').style.display = 'flex';
     numManuallyEdited = false;
     autoFillOfferNum();
+}
+
+// Označava aktivnu stavku u bočnoj navigaciji.
+function setNavActive(id) {
+    ['btn-ponuda','btn-racun','btn-satnice','btn-arhiva'].forEach(k => {
+        document.getElementById(k).classList.toggle('nav-on', k === id);
+    });
 }
 
 // Vraća sljedeći slobodan broj ZA TRENUTNI TIP dokumenta (najveći + 1).
@@ -649,48 +671,67 @@ async function convertToRacun(id) {
 function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
 
 // ===================== GLASOVNI UNOS =====================
-// Klik na 🎤 pa govori — tekst ulazi u zadnje odabrano tekstualno polje.
+// Kad klikneš u tekstualno polje, uz njegov desni rub iskoči ikona 🎤.
+// Klik na nju sluša i upisuje u TO polje, pa je uvijek jasno gdje tekst ide.
 // Radi u Chrome/Edge i na Androidu (Web Speech API), jezik hrvatski.
-let lastTextField = null;
+let micField = null;
 let recog = null;
 let listening = false;
 
+const SR_OK = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
 document.addEventListener('focusin', e => {
     const t = e.target;
+    if (!SR_OK) return;
     if (t.closest && t.closest('#login-modal')) return; // lozinka se ne diktira
-    if (t.matches && t.matches('input[type="text"], textarea')) lastTextField = t;
+    if (t.matches && t.matches('input[type="text"], textarea')) showMic(t);
+    else hideMic();
 });
 
-function toggleMic() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Glasovni unos nije podržan u ovom pregledniku.\nKoristi Chrome ili Edge."); return; }
+document.addEventListener('focusout', e => {
+    // kratka odgoda da klik na samu ikonu stigne prije skrivanja
+    setTimeout(() => { if (!listening && document.activeElement !== micField) hideMic(); }, 200);
+});
+
+function showMic(field) {
+    micField = field;
+    const mic = document.getElementById('mic-float');
+    const r = field.getBoundingClientRect();
+    mic.style.display = 'flex';
+    mic.style.top = (window.scrollY + r.top + (r.height - 30) / 2) + 'px';
+    mic.style.left = (window.scrollX + r.right - 36) + 'px';
+}
+
+function hideMic() {
+    if (listening) return;
+    document.getElementById('mic-float').style.display = 'none';
+}
+
+function micClick() {
     if (listening) { recog.stop(); return; }
-    if (!lastTextField) { alert("Prvo klikni u polje u koje želiš diktirati, pa onda 🎤."); return; }
+    if (!micField) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     recog = new SR();
     recog.lang = 'hr-HR';
     recog.interimResults = false;
+    const mic = document.getElementById('mic-float');
     recog.onresult = e => {
         const txt = e.results[e.results.length - 1][0].transcript.trim();
-        insertDictated(txt);
+        const f = micField;
+        if (!f) return;
+        const sep = (f.value && !f.value.endsWith(' ')) ? ' ' : '';
+        f.value += sep + txt;
+        f.dispatchEvent(new Event('input', { bubbles: true })); // okida postojeće oninput logike
     };
-    recog.onend = () => {
-        listening = false;
-        document.getElementById('mic-btn').style.background = '#fff';
-    };
+    recog.onend = () => { listening = false; mic.style.background = '#1565c0'; mic.innerText = '🎤'; };
     recog.onerror = ev => {
+        listening = false; mic.style.background = '#1565c0'; mic.innerText = '🎤';
         if (ev.error === 'not-allowed') alert("Pristup mikrofonu je blokiran. Dozvoli mikrofon u pregledniku.");
     };
     recog.start();
     listening = true;
-    document.getElementById('mic-btn').style.background = '#ffcdd2';
-}
-
-function insertDictated(txt) {
-    const f = lastTextField;
-    if (!f) return;
-    const sep = (f.value && !f.value.endsWith(' ')) ? ' ' : '';
-    f.value += sep + txt;
-    f.dispatchEvent(new Event('input', { bubbles: true })); // okida postojeće oninput logike
+    mic.style.background = '#f44336';
+    mic.innerText = '⏹';
 }
 
 // ===================== SATNICE =====================
@@ -704,9 +745,7 @@ function openSatnice() {
     document.querySelector('.container').style.display = 'none';
     document.getElementById('doc-actions').style.display = 'none';
     document.getElementById('satnice-panel').style.display = 'block';
-    document.getElementById('btn-satnice').style.background = '#1565c0';
-    document.getElementById('btn-ponuda').style.background = '#b0bec5';
-    document.getElementById('btn-racun').style.background = '#b0bec5';
+    setNavActive('btn-satnice');
     const iso = new Date().toISOString();
     if (!document.getElementById('tsMonth').value) document.getElementById('tsMonth').value = iso.slice(0, 7);
     if (!document.getElementById('tsDate').value) document.getElementById('tsDate').value = iso.slice(0, 10);
@@ -821,7 +860,7 @@ async function renderSatnice() {
         return `<tr style="${r.isDeleted ? 'opacity:.6;' : ''}"><td>${dat}</td><td>${r.emp}</td><td>${r.proj || '—'}</td><td><b>${r.hours}</b></td><td>${r.dnevnica ? '✓' : ''}</td><td style="color:#777;">${r.note || ''}</td><td>${btn}</td></tr>`;
     }).join('') || `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">${showKos ? 'Koš je prazan.' : 'Nema unosa za odabrani mjesec.'}</td></tr>`;
 
-    // --- statistika po zaposleniku ---
+    // --- pregled mjeseca: jedan redak po zaposleniku, projekti kao lista ispod ---
     const isplateSnap = await db.collection('isplate').where('month', '==', m).get();
     const paid = new Set(isplateSnap.docs.map(d => d.data().emp));
     const byEmp = {};
@@ -831,19 +870,35 @@ async function renderSatnice() {
         byEmp[r.emp].days.add(r.date);
         if (r.dnevnica) byEmp[r.emp].dnevnice++;
     });
-    document.getElementById('tsStatsEmp').innerHTML = Object.keys(byEmp).sort().map(emp => {
-        const s = byEmp[emp];
-        const isPaid = paid.has(emp);
-        return `<tr><td>${emp}</td><td><b>${Math.round(s.hours * 10) / 10}</b></td><td>${s.days.size}</td><td>${s.dnevnice}</td><td><button class="btn" style="padding:4px 10px; font-size:12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${isPaid ? '✓ DA' : 'NE'}</button></td></tr>`;
-    }).join('') || '<tr><td colspan="5" style="text-align:center; color:#888; padding:15px;">Nema podataka.</td></tr>';
-
-    // --- statistika po projektu, s trakom udjela ---
     const byProj = {};
     live.forEach(r => { const p = r.proj || '(bez projekta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
-    document.getElementById('tsStatsProj').innerHTML = Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p => {
-        const pct = totalH ? Math.round(byProj[p] / totalH * 100) : 0;
-        return `<tr><td>${p}</td><td><b>${Math.round(byProj[p] * 10) / 10}</b></td><td><div style="display:flex; align-items:center; gap:6px;"><div class="bar" style="flex:1;"><div style="width:${pct}%"></div></div><span style="font-size:11px; color:#777;">${pct}%</span></div></td></tr>`;
-    }).join('') || '<tr><td colspan="3" style="text-align:center; color:#888; padding:15px;">Nema podataka.</td></tr>';
+
+    let html = '';
+    const empKeys = Object.keys(byEmp).sort();
+    if (empKeys.length) {
+        html += empKeys.map(emp => {
+            const s = byEmp[emp];
+            const isPaid = paid.has(emp);
+            return `<div class="st-row">
+                <div class="st-name">${emp}</div>
+                <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours*10)/10}</b> h &nbsp;\u00b7&nbsp; ${s.days.size} dana &nbsp;\u00b7&nbsp; ${s.dnevnice} dnevnica</div>
+                <button class="btn" style="padding:4px 12px; font-size:12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${isPaid ? '\u2713 pla\u0107eno' : 'nije pla\u0107eno'}</button>
+            </div>`;
+        }).join('');
+        const projKeys = Object.keys(byProj).sort((a,b) => byProj[b] - byProj[a]);
+        html += `<div style="margin-top:18px; font-size:12px; font-weight:bold; color:#555; text-transform:uppercase;">Po projektu</div>`;
+        html += projKeys.map(p => {
+            const pct = totalH ? Math.round(byProj[p]/totalH*100) : 0;
+            return `<div class="st-row">
+                <div class="st-name" style="font-weight:400;">${p}</div>
+                <div class="bar" style="width:130px;"><div style="width:${pct}%"></div></div>
+                <div class="st-meta" style="width:75px; text-align:right;"><b>${Math.round(byProj[p]*10)/10}</b> h \u00b7 ${pct}%</div>
+            </div>`;
+        }).join('');
+    } else {
+        html = '<div style="text-align:center; color:#888; padding:20px;">Nema podataka za odabrani mjesec.</div>';
+    }
+    document.getElementById('tsStats').innerHTML = html;
 }
 
 // Oznaka "plaća isplaćena" za zaposlenika u odabranom mjesecu — samo DA/NE, bez iznosa.
