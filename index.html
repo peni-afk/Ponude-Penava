@@ -75,6 +75,20 @@
         .bar div { background:#1565c0; height:100%; }
         .ts-form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
         .ts-form input, .ts-form select { margin-bottom:0; }
+        select { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-family:inherit; font-size:14px; background:#fff; height:37px; }
+        .gr { border-collapse:collapse; font-size:12.5px; }
+        .gr th { background:#fff; border:none; padding:5px 3px; color:#888; font-weight:normal; text-align:center; font-size:11.5px; line-height:1.25; }
+        .gr th.emp-h { text-align:left; padding:6px 10px; color:#1565c0; font-weight:600; min-width:130px; position:sticky; left:0; background:#fff; z-index:2; }
+        .gr th.we { color:#c62828; background:#fff5f5; }
+        .gr td { border:1px solid #e8e8e8; padding:0; }
+        .gr td.emp-c { border:none; border-top:1px solid #f0f0f0; padding:5px 10px; font-weight:600; color:#333; position:sticky; left:0; background:#fff; z-index:2; }
+        .gr td.sum { border:none; border-top:1px solid #f0f0f0; padding:5px 10px; font-weight:600; color:#1565c0; text-align:center; }
+        .gr input.h { width:38px; height:31px; border:none; text-align:center; font-size:13px; font-weight:600; color:#2e7d32; background:transparent; padding:0; margin:0; border-radius:0; }
+        .gr input.h:focus { outline:2px solid #1565c0; outline-offset:-2px; background:#fff; }
+        .gr td.wknd { background:#fff5f5; }
+        .gr td.filled { background:#f1f8f2; }
+        .gr td.hasnote { position:relative; }
+        .gr td.hasnote::after { content:''; position:absolute; top:1px; right:1px; border:4px solid transparent; border-top-color:#f39c12; border-right-color:#f39c12; }
         .st-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eee; }
         .st-row:last-child { border-bottom:none; }
         .st-name { flex:1; font-weight:600; font-size:14px; min-width:110px; }
@@ -272,12 +286,12 @@
     <button class="btn btn-print" onclick="syncPrintText(); window.print()">🖨️ ISPRINTAJ u PDF</button>
 </div>
 
-<div id="satnice-panel" class="no-print" style="display:none; max-width: 1000px; margin: 0 auto 50px auto;">
+<div id="satnice-panel" class="no-print" style="display:none; max-width: 1060px; margin: 0 auto 50px auto;">
 
     <div class="ts-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
             <div style="font-size:20px; font-weight:600; color:#1565c0;">Evidencija rada</div>
-            <div style="font-size:13px; color:#777;">Satnice, dnevnice i pregled po projektima</div>
+            <div style="font-size:13px; color:#777;">Upiši sate izravno u mrežu — sprema se samo</div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
             <button class="btn" style="background:#eceff1; color:#333; padding:8px 14px;" onclick="shiftMonth(-1)">‹</button>
@@ -289,36 +303,23 @@
     <div id="tsKpi" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:15px;"></div>
 
     <div class="ts-card">
-        <div class="ts-h">Novi unos</div>
-        <div class="ts-form">
-            <div style="width:150px;"><label class="ts-label">Datum</label><input type="date" id="tsDate"></div>
-            <div style="width:170px;"><label class="ts-label">Zaposlenik</label><select id="tsEmp"></select></div>
-            <div style="flex:1; min-width:180px;"><label class="ts-label">Projekt / gradilište</label><input type="text" id="tsProj" list="projList" placeholder="npr. Kuća Marić"><datalist id="projList"></datalist></div>
-            <div style="width:80px;"><label class="ts-label">Sati</label><input type="number" id="tsHours" step="0.5" min="0" value="8"></div>
-            <div style="width:95px;">
-                <label class="ts-label">Dnevnica</label>
-                <label style="display:flex; align-items:center; gap:7px; height:37px; cursor:pointer; font-size:14px; color:#555;">
-                    <input type="checkbox" id="tsDnevnica" style="width:19px; height:19px; margin:0;"> da
-                </label>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+            <label class="ts-label" style="margin:0;">Projekt / gradilište</label>
+            <select id="gridProj" onchange="renderGrid()" style="width:auto; min-width:180px; margin:0;"></select>
+            <button class="btn" style="background:#1565c0; padding:8px 14px;" onclick="addProject()">+ Novi projekt</button>
+            <div id="weekNav" style="margin-left:auto; display:none; align-items:center; gap:6px;">
+                <button class="btn" style="background:#eceff1; color:#333; padding:6px 12px;" onclick="shiftWeek(-1)">‹</button>
+                <span id="weekLabel" style="font-size:13px; color:#555; font-weight:600;"></span>
+                <button class="btn" style="background:#eceff1; color:#333; padding:6px 12px;" onclick="shiftWeek(1)">›</button>
             </div>
-            <div style="flex:1; min-width:180px;"><label class="ts-label">Napomena</label><input type="text" id="tsNote" placeholder="neobavezno"></div>
-            <div style="width:110px;"><button class="btn btn-add" style="width:100%; margin:0;" onclick="addEntry()">DODAJ</button></div>
         </div>
+        <div id="gridWrap" style="overflow-x:auto;"></div>
+        <div style="font-size:12px; color:#888; margin-top:10px;">Upiši broj sati u ćeliju. Prazno = nije radio. Dvoklik na ćeliju za napomenu.</div>
     </div>
 
     <div class="ts-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-            <div class="ts-h" style="margin:0;">Unosi</div>
-            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <select id="tsFilterEmp" onchange="renderSatnice()" style="width:auto; margin:0;"></select>
-                <label style="font-size:13px; color:#777; display:flex; align-items:center; gap:5px; cursor:pointer;">
-                    <input type="checkbox" id="tsShowKos" onchange="renderSatnice()" style="width:16px; height:16px; margin:0;"> Koš
-                </label>
-            </div>
-        </div>
-        <div style="max-height:340px; overflow-y:auto;">
-            <table style="margin:0;"><thead><tr><th>Datum</th><th>Zaposlenik</th><th>Projekt</th><th style="width:55px;">Sati</th><th style="width:55px;">Dnev.</th><th>Napomena</th><th style="width:55px;"></th></tr></thead><tbody id="tsBody"></tbody></table>
-        </div>
+        <div class="ts-h">Dnevnice</div>
+        <div id="tsDnevnice"></div>
     </div>
 
     <div class="ts-card">
@@ -326,7 +327,7 @@
         <div id="tsStats"></div>
     </div>
 
-    <div class="ts-card" style="margin-top:15px;">
+    <div class="ts-card">
         <div class="ts-h">Zaposlenici</div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <input type="text" id="newEmpName" placeholder="Ime i prezime" style="width:220px; margin:0;" onkeydown="if(event.key==='Enter')addEmployee()">
@@ -735,10 +736,15 @@ function micClick() {
 }
 
 // ===================== SATNICE =====================
-// Podaci: zaposlenici, sati (dnevni unosi), isplate (samo oznaka DA/NE po mjesecu,
-// bez iznosa — namjerno, radi sigurnosti). Sve iza prijave.
-// Brisanje je meko: unos se označi kao obrisan i vidi se pod "Prikaži koš", gdje se vraća.
+// Model: mjesečna mreža — reci su zaposlenici, stupci dani. Upis sata u ćeliju
+// odmah sprema zapis u kolekciju 'sati' (jedan dokument = jedan čovjek/dan/projekt).
+// Dnevnice se ne vežu uz pojedini dan nego se obračunavaju mjesečno (kolekcija 'dnevnice').
+// Brisanje je meko — prazna ćelija označi zapis kao obrisan, ne uklanja ga iz baze.
 let employees = [];
+let projects = [];
+let monthRows = [];     // svi zapisi tekućeg mjeseca
+let weekOffset = 0;     // pomak tjedna na uskim ekranima
+let isNarrow = false;
 
 function openSatnice() {
     if (!auth.currentUser) { openLogin(openSatnice); return; }
@@ -748,30 +754,38 @@ function openSatnice() {
     setNavActive('btn-satnice');
     const iso = new Date().toISOString();
     if (!document.getElementById('tsMonth').value) document.getElementById('tsMonth').value = iso.slice(0, 7);
-    if (!document.getElementById('tsDate').value) document.getElementById('tsDate').value = iso.slice(0, 10);
     loadEmployees().then(renderSatnice);
 }
 
-// Pomicanje prikaza mjesec unaprijed/unatrag strelicama.
 function shiftMonth(delta) {
     const el = document.getElementById('tsMonth');
     if (!el.value) return;
     const [y, m] = el.value.split('-').map(Number);
     const d = new Date(y, m - 1 + delta, 1);
     el.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    weekOffset = 0;
     renderSatnice();
+}
+
+function shiftWeek(delta) {
+    const days = daysInMonth();
+    const maxOff = Math.floor((days - 1) / 7);
+    weekOffset = Math.min(maxOff, Math.max(0, weekOffset + delta));
+    renderGrid();
+}
+
+function daysInMonth() {
+    const [y, m] = document.getElementById('tsMonth').value.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
 }
 
 async function loadEmployees() {
     const snap = await db.collection('zaposlenici').get();
     employees = snap.docs.map(d => ({ id: d.id, name: d.data().name, active: d.data().active !== false }))
         .filter(e => e.active).sort((a, b) => a.name.localeCompare(b.name));
-    const opts = employees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
-    document.getElementById('tsEmp').innerHTML = opts || '<option value="">— prvo dodaj zaposlenika —</option>';
-    document.getElementById('tsFilterEmp').innerHTML = '<option value="">Svi zaposlenici</option>' + opts;
     document.getElementById('empChips').innerHTML = employees.map(e =>
         `<div class="chip">${e.name}<span title="Ukloni s popisa" onclick="removeEmployee('${e.id}','${e.name}')">×</span></div>`
-    ).join('') || '<span style="font-size:13px; color:#888;">Još nema zaposlenika.</span>';
+    ).join('') || '<span style="font-size:13px; color:#888;">Još nema zaposlenika. Dodaj barem jednog da se pojavi mreža.</span>';
 }
 
 async function addEmployee() {
@@ -782,135 +796,245 @@ async function addEmployee() {
     await db.collection('zaposlenici').add({ name, active: true });
     inp.value = '';
     await loadEmployees();
+    renderSatnice();
 }
 
 // Zaposlenik se ne briše iz baze — samo se skida s popisa, da svi njegovi
-// prošli unosi sati ostanu sačuvani i vidljivi u statistici.
+// prošli sati ostanu sačuvani i točni u statistici.
 async function removeEmployee(id, name) {
     if (!confirm("Ukloniti " + name + " s popisa zaposlenika?")) return;
     if (!confirm("Još jednom za potvrdu.\n\nSvi dosadašnji unosi sati ostaju sačuvani — miče se samo s popisa za nove unose.")) return;
     await db.collection('zaposlenici').doc(id).update({ active: false });
     await loadEmployees();
-}
-
-async function addEntry() {
-    const date = document.getElementById('tsDate').value;
-    const emp = document.getElementById('tsEmp').value;
-    const proj = document.getElementById('tsProj').value.trim();
-    const hours = parseFloat(document.getElementById('tsHours').value);
-    const dnevnica = document.getElementById('tsDnevnica').checked;
-    const note = document.getElementById('tsNote').value.trim();
-    if (!date || !emp) { alert("Datum i zaposlenik su obavezni."); return; }
-    if (isNaN(hours) || hours <= 0) { alert("Upiši broj sati."); return; }
-    try {
-        await db.collection('sati').add({ date, emp, proj, hours, dnevnica, note, isDeleted: false, created: Date.now() });
-        document.getElementById('tsNote').value = '';
-        document.getElementById('tsDnevnica').checked = false;
-        document.getElementById('tsMonth').value = date.slice(0, 7);
-        renderSatnice();
-    } catch (e) { alert("Greška pri spremanju unosa."); console.error(e); }
-}
-
-async function deleteEntry(id, opis) {
-    if (!confirm("Premjestiti unos u koš?\n" + opis)) return;
-    if (!confirm("Još jednom za potvrdu.\n\nUnos ostaje sačuvan i možeš ga vratiti kvačicom „Prikaži koš\".")) return;
-    await db.collection('sati').doc(id).update({ isDeleted: true, deletedAt: Date.now() });
     renderSatnice();
 }
 
-async function restoreEntry(id) {
-    await db.collection('sati').doc(id).update({ isDeleted: false });
-    renderSatnice();
+function addProject() {
+    const name = prompt("Naziv projekta / gradilišta:");
+    if (!name || !name.trim()) return;
+    const n = name.trim();
+    if (!projects.includes(n)) projects.push(n);
+    fillProjSelect(n);
+    renderGrid();
+}
+
+function fillProjSelect(selected) {
+    const sel = document.getElementById('gridProj');
+    const cur = selected || sel.value;
+    sel.innerHTML = projects.map(p => `<option value="${p}">${p}</option>`).join('')
+        || '<option value="">— dodaj projekt —</option>';
+    if (cur && projects.includes(cur)) sel.value = cur;
 }
 
 async function renderSatnice() {
     const m = document.getElementById('tsMonth').value;
     if (!m) return;
-    const filterEmp = document.getElementById('tsFilterEmp').value;
-    const showKos = document.getElementById('tsShowKos').checked;
-
     const snap = await db.collection('sati').where('date', '>=', m + '-01').where('date', '<=', m + '-31').get();
-    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const live = all.filter(r => !r.isDeleted);
-    live.sort((a, b) => b.date.localeCompare(a.date));
+    monthRows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !r.isDeleted);
 
-    // --- prijedlozi projekata za brži unos ---
-    const projNames = [...new Set(live.map(r => r.proj).filter(Boolean))];
-    document.getElementById('projList').innerHTML = projNames.map(p => `<option value="${p}">`).join('');
+    projects = [...new Set(monthRows.map(r => r.proj).filter(Boolean))].sort();
+    if (!projects.length) projects = ['Gradilište 1'];
+    fillProjSelect();
 
-    // --- KPI kartice ---
-    const totalH = live.reduce((s, r) => s + r.hours, 0);
-    const totalD = live.filter(r => r.dnevnica).length;
-    const uniqDays = new Set(live.map(r => r.date)).size;
-    const uniqEmp = new Set(live.map(r => r.emp)).size;
+    renderKpi();
+    renderGrid();
+    renderDnevnice();
+    renderStats();
+}
+
+function renderKpi() {
+    const totalH = monthRows.reduce((s, r) => s + (r.hours || 0), 0);
+    const uniqDays = new Set(monthRows.map(r => r.date)).size;
+    const uniqEmp = new Set(monthRows.map(r => r.emp)).size;
+    const uniqProj = new Set(monthRows.map(r => r.proj).filter(Boolean)).size;
     document.getElementById('tsKpi').innerHTML = `
         <div class="kpi"><div class="kpi-v">${Math.round(totalH * 10) / 10}</div><div class="kpi-l">ukupno sati</div></div>
         <div class="kpi"><div class="kpi-v">${uniqDays}</div><div class="kpi-l">radnih dana</div></div>
         <div class="kpi"><div class="kpi-v">${uniqEmp}</div><div class="kpi-l">zaposlenika</div></div>
-        <div class="kpi"><div class="kpi-v">${totalD}</div><div class="kpi-l">dnevnica</div></div>`;
+        <div class="kpi"><div class="kpi-v">${uniqProj}</div><div class="kpi-l">gradilišta</div></div>`;
+}
 
-    // --- tablica unosa ---
-    let shown = showKos ? all.filter(r => r.isDeleted) : live;
-    if (filterEmp) shown = shown.filter(r => r.emp === filterEmp);
-    document.getElementById('tsBody').innerHTML = shown.map(r => {
-        const dat = r.date.split('-').reverse().join('.') + '.';
-        const btn = showKos
-            ? `<button class="btn" style="padding:4px 10px; background:#2e7d32; font-size:12px;" onclick="restoreEntry('${r.id}')">↩</button>`
-            : `<button class="btn btn-delete" onclick="deleteEntry('${r.id}','${dat} ${r.emp}')">🗑️</button>`;
-        return `<tr style="${r.isDeleted ? 'opacity:.6;' : ''}"><td>${dat}</td><td>${r.emp}</td><td>${r.proj || '—'}</td><td><b>${r.hours}</b></td><td>${r.dnevnica ? '✓' : ''}</td><td style="color:#777;">${r.note || ''}</td><td>${btn}</td></tr>`;
-    }).join('') || `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">${showKos ? 'Koš je prazan.' : 'Nema unosa za odabrani mjesec.'}</td></tr>`;
+function renderGrid() {
+    const m = document.getElementById('tsMonth').value;
+    const proj = document.getElementById('gridProj').value;
+    const wrap = document.getElementById('gridWrap');
+    if (!employees.length) { wrap.innerHTML = '<div style="color:#888; padding:20px; text-align:center;">Dodaj zaposlenika (dolje) da se pojavi mreža.</div>'; return; }
 
-    // --- pregled mjeseca: jedan redak po zaposleniku, projekti kao lista ispod ---
-    const isplateSnap = await db.collection('isplate').where('month', '==', m).get();
-    const paid = new Set(isplateSnap.docs.map(d => d.data().emp));
+    const total = daysInMonth();
+    isNarrow = window.innerWidth < 860;
+    let from = 1, to = total;
+    if (isNarrow) {
+        from = weekOffset * 7 + 1;
+        to = Math.min(total, from + 6);
+        document.getElementById('weekNav').style.display = 'flex';
+        document.getElementById('weekLabel').innerText = from + '. – ' + to + '.';
+    } else {
+        document.getElementById('weekNav').style.display = 'none';
+    }
+
+    const dn = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'];
+    const [y, mo] = m.split('-').map(Number);
+
+    let head = '<tr><th class="emp-h">Zaposlenik</th>';
+    for (let d = from; d <= to; d++) {
+        const wd = new Date(y, mo - 1, d).getDay();
+        const we = (wd === 0 || wd === 6);
+        head += `<th class="${we ? 'we' : ''}">${d}<br><span style="font-size:10px;">${dn[wd]}</span></th>`;
+    }
+    head += '<th class="emp-h" style="min-width:44px; text-align:center; position:static;">Σ</th></tr>';
+
+    let rows = '';
+    employees.forEach(e => {
+        let sumCells = '';
+        for (let d = from; d <= to; d++) {
+            const ds = m + '-' + String(d).padStart(2, '0');
+            const rec = monthRows.find(r => r.emp === e.name && r.date === ds && (r.proj || '') === proj);
+            const wd = new Date(y, mo - 1, d).getDay();
+            const we = (wd === 0 || wd === 6);
+            const v = rec ? rec.hours : '';
+            const cls = [we ? 'wknd' : '', rec ? 'filled' : '', (rec && rec.note) ? 'hasnote' : ''].filter(Boolean).join(' ');
+            const t = rec && rec.note ? ` title="${rec.note}"` : '';
+            sumCells += `<td class="${cls}"${t}><input class="h" type="text" inputmode="decimal" value="${v}" data-emp="${e.name}" data-date="${ds}" onchange="saveCell(this)" ondblclick="editNote(this)"></td>`;
+        }
+        const monthSum = monthRows.filter(r => r.emp === e.name && (r.proj || '') === proj).reduce((s, r) => s + r.hours, 0);
+        rows += `<tr><td class="emp-c">${e.name}</td>${sumCells}<td class="sum">${Math.round(monthSum * 10) / 10}</td></tr>`;
+    });
+
+    wrap.innerHTML = `<table class="gr"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+}
+
+// Sprema jednu ćeliju. Prazno polje = meko brisanje postojećeg zapisa.
+async function saveCell(inp) {
+    const emp = inp.dataset.emp, date = inp.dataset.date;
+    const proj = document.getElementById('gridProj').value;
+    const raw = inp.value.trim().replace(',', '.');
+    const rec = monthRows.find(r => r.emp === emp && r.date === date && (r.proj || '') === proj);
+
+    if (raw === '') {
+        if (rec) { await db.collection('sati').doc(rec.id).update({ isDeleted: true, deletedAt: Date.now() }); }
+        await refreshMonth();
+        return;
+    }
+    const h = parseFloat(raw);
+    if (isNaN(h) || h <= 0 || h > 24) { alert("Upiši broj sati između 0 i 24."); inp.value = rec ? rec.hours : ''; return; }
+    try {
+        if (rec) await db.collection('sati').doc(rec.id).update({ hours: h });
+        else await db.collection('sati').add({ date, emp, proj, hours: h, note: '', isDeleted: false, created: Date.now() });
+        await refreshMonth();
+    } catch (e) { alert("Greška pri spremanju."); }
+}
+
+async function editNote(inp) {
+    const emp = inp.dataset.emp, date = inp.dataset.date;
+    const proj = document.getElementById('gridProj').value;
+    const rec = monthRows.find(r => r.emp === emp && r.date === date && (r.proj || '') === proj);
+    if (!rec) { alert("Prvo upiši sate, pa onda napomenu."); return; }
+    const n = prompt("Napomena za " + emp + ", " + date.split('-').reverse().join('.') + ".:", rec.note || '');
+    if (n === null) return;
+    await db.collection('sati').doc(rec.id).update({ note: n.trim() });
+    await refreshMonth();
+}
+
+// Ponovno učita mjesec i osvježi sve prikaze bez gubitka odabranog projekta.
+async function refreshMonth() {
+    const m = document.getElementById('tsMonth').value;
+    const snap = await db.collection('sati').where('date', '>=', m + '-01').where('date', '<=', m + '-31').get();
+    monthRows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !r.isDeleted);
+    const found = [...new Set(monthRows.map(r => r.proj).filter(Boolean))];
+    found.forEach(p => { if (!projects.includes(p)) projects.push(p); });
+    renderKpi(); renderGrid(); renderDnevnice(); renderStats();
+}
+
+// Dnevnice: aplikacija predloži broj dana na terenu, ali broj je uredljiv,
+// jer se dnevnica ne priznaje automatski za svaki radni dan.
+async function renderDnevnice() {
+    const m = document.getElementById('tsMonth').value;
+    const snap = await db.collection('dnevnice').where('month', '==', m).get();
+    const saved = {};
+    snap.docs.forEach(d => { saved[d.data().emp] = { count: d.data().count, paid: d.data().paid, id: d.id }; });
+
     const byEmp = {};
-    live.forEach(r => {
-        if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set(), dnevnice: 0 };
+    monthRows.forEach(r => {
+        if (!byEmp[r.emp]) byEmp[r.emp] = new Set();
+        byEmp[r.emp].add(r.date);
+    });
+    const keys = Object.keys(byEmp).sort();
+    if (!keys.length) { document.getElementById('tsDnevnice').innerHTML = '<div style="color:#888; padding:12px; text-align:center;">Nema evidentiranih dana u ovom mjesecu.</div>'; return; }
+
+    document.getElementById('tsDnevnice').innerHTML = keys.map(emp => {
+        const dana = byEmp[emp].size;
+        const s = saved[emp];
+        const val = s && s.count !== undefined ? s.count : dana;
+        const paid = s ? s.paid : false;
+        return `<div class="st-row">
+            <div class="st-name">${emp}</div>
+            <div class="st-meta">${dana} dana na terenu</div>
+            <input type="number" min="0" value="${val}" style="width:60px; text-align:center; margin:0; padding:5px;" onchange="saveDnevnica('${emp}', this.value)">
+            <span class="st-meta">priznato</span>
+            <button class="btn" style="padding:4px 12px; font-size:12px; background:${paid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${paid ? '✓ isplaćeno' : 'nije isplaćeno'}</button>
+        </div>`;
+    }).join('');
+}
+
+function dnevnicaId(m, emp) { return (m + '_' + emp).replace(/[^\wČĆŽŠĐčćžšđ-]/g, '-'); }
+
+async function saveDnevnica(emp, count) {
+    const m = document.getElementById('tsMonth').value;
+    const ref = db.collection('dnevnice').doc(dnevnicaId(m, emp));
+    const doc = await ref.get();
+    await ref.set({ emp, month: m, count: parseInt(count, 10) || 0, paid: doc.exists ? !!doc.data().paid : false }, { merge: true });
+    renderDnevnice();
+}
+
+async function togglePaid(emp) {
+    const m = document.getElementById('tsMonth').value;
+    const ref = db.collection('dnevnice').doc(dnevnicaId(m, emp));
+    const doc = await ref.get();
+    const cur = doc.exists ? !!doc.data().paid : false;
+    const cnt = doc.exists && doc.data().count !== undefined ? doc.data().count : 0;
+    await ref.set({ emp, month: m, count: cnt, paid: !cur }, { merge: true });
+    renderDnevnice();
+}
+
+function renderStats() {
+    const totalH = monthRows.reduce((s, r) => s + r.hours, 0);
+    const byEmp = {};
+    monthRows.forEach(r => {
+        if (!byEmp[r.emp]) byEmp[r.emp] = { hours: 0, days: new Set() };
         byEmp[r.emp].hours += r.hours;
         byEmp[r.emp].days.add(r.date);
-        if (r.dnevnica) byEmp[r.emp].dnevnice++;
     });
     const byProj = {};
-    live.forEach(r => { const p = r.proj || '(bez projekta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
+    monthRows.forEach(r => { const p = r.proj || '(bez projekta)'; byProj[p] = (byProj[p] || 0) + r.hours; });
 
-    let html = '';
     const empKeys = Object.keys(byEmp).sort();
-    if (empKeys.length) {
-        html += empKeys.map(emp => {
-            const s = byEmp[emp];
-            const isPaid = paid.has(emp);
-            return `<div class="st-row">
-                <div class="st-name">${emp}</div>
-                <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours*10)/10}</b> h &nbsp;\u00b7&nbsp; ${s.days.size} dana &nbsp;\u00b7&nbsp; ${s.dnevnice} dnevnica</div>
-                <button class="btn" style="padding:4px 12px; font-size:12px; background:${isPaid ? '#2e7d32' : '#b0bec5'};" onclick="togglePaid('${emp}')">${isPaid ? '\u2713 pla\u0107eno' : 'nije pla\u0107eno'}</button>
-            </div>`;
-        }).join('');
-        const projKeys = Object.keys(byProj).sort((a,b) => byProj[b] - byProj[a]);
-        html += `<div style="margin-top:18px; font-size:12px; font-weight:bold; color:#555; text-transform:uppercase;">Po projektu</div>`;
-        html += projKeys.map(p => {
-            const pct = totalH ? Math.round(byProj[p]/totalH*100) : 0;
-            return `<div class="st-row">
-                <div class="st-name" style="font-weight:400;">${p}</div>
-                <div class="bar" style="width:130px;"><div style="width:${pct}%"></div></div>
-                <div class="st-meta" style="width:75px; text-align:right;"><b>${Math.round(byProj[p]*10)/10}</b> h \u00b7 ${pct}%</div>
-            </div>`;
-        }).join('');
-    } else {
-        html = '<div style="text-align:center; color:#888; padding:20px;">Nema podataka za odabrani mjesec.</div>';
-    }
+    if (!empKeys.length) { document.getElementById('tsStats').innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Nema podataka za odabrani mjesec.</div>'; return; }
+
+    let html = empKeys.map(emp => {
+        const s = byEmp[emp];
+        return `<div class="st-row">
+            <div class="st-name">${emp}</div>
+            <div class="st-meta"><b style="color:#1565c0; font-size:15px;">${Math.round(s.hours * 10) / 10}</b> h &nbsp;·&nbsp; ${s.days.size} dana</div>
+        </div>`;
+    }).join('');
+
+    html += `<div style="margin-top:18px; font-size:12px; font-weight:bold; color:#555; text-transform:uppercase;">Po projektu</div>`;
+    html += Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map(p => {
+        const pct = totalH ? Math.round(byProj[p] / totalH * 100) : 0;
+        return `<div class="st-row">
+            <div class="st-name" style="font-weight:400;">${p}</div>
+            <div class="bar" style="width:120px;"><div style="width:${pct}%"></div></div>
+            <div class="st-meta" style="width:80px; text-align:right;"><b>${Math.round(byProj[p] * 10) / 10}</b> h · ${pct}%</div>
+        </div>`;
+    }).join('');
+
     document.getElementById('tsStats').innerHTML = html;
 }
 
-// Oznaka "plaća isplaćena" za zaposlenika u odabranom mjesecu — samo DA/NE, bez iznosa.
-async function togglePaid(emp) {
-    const m = document.getElementById('tsMonth').value;
-    const id = (m + '_' + emp).replace(/[\/\s\.]/g, '-');
-    const ref = db.collection('isplate').doc(id);
-    const doc = await ref.get();
-    if (doc.exists) await ref.delete();
-    else await ref.set({ emp, month: m, paid: true, ts: Date.now() });
-    renderSatnice();
-}
+window.addEventListener('resize', () => {
+    const n = window.innerWidth < 860;
+    if (n !== isNarrow && document.getElementById('satnice-panel').style.display === 'block') renderGrid();
+});
 
 window.onload = () => { 
     addRow("Zaštita i priprema zidova i plafona za molovanje (bez materijala)", 3900, 1); 
