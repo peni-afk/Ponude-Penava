@@ -201,7 +201,7 @@
     <button id="btn-arhiva" class="nav-item" onclick="requireAdmin()"><span>📁</span> Arhiva</button>
 </div>
 
-<div id="mic-float" class="no-print" onclick="micClick()" title="Diktiraj u ovo polje" style="display:none; position:absolute; z-index:1200; width:30px; height:30px; border-radius:50%; background:#1565c0; color:#fff; align-items:center; justify-content:center; cursor:pointer; font-size:15px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🎤</div>
+<div id="mic-float" class="no-print" onclick="micClick()" title="Diktiraj u ovo polje" style="display:none; position:absolute; z-index:3100; width:30px; height:30px; border-radius:50%; background:#1565c0; color:#fff; align-items:center; justify-content:center; cursor:pointer; font-size:15px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🎤</div>
 
 <div class="container">
     <div class="logo-container">
@@ -684,8 +684,8 @@ const SR_OK = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 document.addEventListener('focusin', e => {
     const t = e.target;
     if (!SR_OK) return;
-    if (t.closest && t.closest('#login-modal')) return; // lozinka se ne diktira
-    if (t.matches && t.matches('input[type="text"], textarea')) showMic(t);
+    // Diktiranje ima smisla samo za opis radova (tablica stavki i modal na mobitelu).
+    if (t.matches && (t.classList.contains('desc') || t.id === 'modal-desc')) showMic(t);
     else hideMic();
 });
 
